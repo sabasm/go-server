@@ -1,8 +1,6 @@
-module hello-world-go
+module github.com/sabasm/go-server
 
 go 1.22.1
-
-toolchain go1.22.10
 
 require (
 	github.com/gorilla/mux v1.8.1
@@ -11,6 +9,6 @@ require (
 )
 
 require (
-	github.com/stretchr/testify v1.10.0 // indirect
-	go.uber.org/multierr v1.10.0 // indirect
+	github.com/stretchr/testify v1.10.0
+	go.uber.org/multierr v1.10.0
 )
