@@ -1,4 +1,3 @@
-```markdown
 # Codebase Overview: Hello World Go Application
 
 ## Project Structure
@@ -72,4 +71,3 @@
 ---
 
 This codebase is designed for maintainability and scalability through well-structured modules, clear service lifecycles, and CI/CD readiness.
-```
