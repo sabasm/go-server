@@ -1,9 +1,20 @@
 run:
   timeout: 5m
   modules-download-mode: readonly
-  skip-dirs:
-    - vendor
-    - bin
+  issues:
+    exclude-dirs:
+      - vendor
+      - bin
+    max-issues-per-linter: 0
+    max-same-issues: 0
+    exclude-rules:
+      - path: _test\.go
+        linters:
+          - gocyclo
+          - dupl
+          - gosec
+    exclude:
+      - "should have a package comment"
 
 linters:
   enable:
@@ -33,8 +44,6 @@ linters:
     - whitespace
 
 linters-settings:
-  govet:
-    check-shadowing: true
   gocyclo:
     min-complexity: 15
   dupl:
@@ -44,18 +53,4 @@ linters-settings:
     min-occurrences: 2
   misspell:
     locale: US
-
-issues:
-  max-issues-per-linter: 0
-  max-same-issues: 0
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - dupl
-        - gosec
-
-  exclude:
-    - "should have a package comment"
-
 
