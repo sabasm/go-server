@@ -1,0 +1,15 @@
+bin/
+*.exe
+*.out
+*.log
+*.env
+.DS_Store
+.idea/
+.vscode/
+node_modules/
+coverage/
+*.test
+*.test.js
+updates.txt
+
+
