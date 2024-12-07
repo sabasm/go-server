@@ -35,7 +35,7 @@ func main() {
 		Build()
 
 	go func() {
-		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
+		if err := srv.Start(); err != nil {
 			log.Printf("Server error: %v", err)
 		}
 	}()

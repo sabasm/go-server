@@ -24,5 +24,3 @@ func TestLoadConfig(t *testing.T) {
 		t.Errorf("Expected APP_ENV=test and APP_PORT=9090, got %v and %v", cfg.Environment, cfg.Port)
 	}
 }
-
-

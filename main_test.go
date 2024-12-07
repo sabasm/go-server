@@ -2,9 +2,10 @@ package main
 
 import "testing"
 
+const expectedMessage = "Hello, World!"
+
 func TestMain(t *testing.T) {
-	expected := "Hello, World!"
-	if expected != "Hello, World!" {
-		t.Errorf("Expected %s but got something else", expected)
+	if expectedMessage != "Hello, World!" {
+		t.Errorf("Expected %s but got something else", expectedMessage)
 	}
 }

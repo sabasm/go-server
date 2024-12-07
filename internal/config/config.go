@@ -9,13 +9,13 @@ import (
 )
 
 type AppConfig struct {
-	Environment    string
-	Port           int
-	BaseURL        string
-	RetryCount     int
-	RetryDelay     int
-	Monitoring     bool
-	MetricsPrefix  string
+	Environment   string
+	Port          int
+	BaseURL       string
+	RetryCount    int
+	RetryDelay    int
+	Monitoring    bool
+	MetricsPrefix string
 }
 
 type ConfigLoader interface {
@@ -69,5 +69,3 @@ func getEnvAsBool(key string, defaultValue bool) bool {
 	}
 	return defaultValue
 }
-
-
