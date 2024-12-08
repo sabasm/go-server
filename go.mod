@@ -1,4 +1,4 @@
-module hello-world-go
+module github.com/sabasm/go-server
 
 go 1.22.1
 

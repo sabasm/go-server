@@ -1,3 +1,4 @@
+// internal/server/server.go
 package server
 
 import (
@@ -16,6 +17,16 @@ type Server struct {
 	Router *mux.Router
 	Logger *zap.Logger
 	srv    *http.Server
+}
+
+func (s *Server) Start() error {
+	s.Logger.Info("Starting server", zap.String("addr", s.srv.Addr))
+	return s.srv.ListenAndServe()
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	s.Logger.Info("Server shutting down")
+	return s.srv.Shutdown(ctx)
 }
 
 type ServerBuilder struct {
@@ -53,14 +64,4 @@ func (b *ServerBuilder) Build() *Server {
 		Logger: b.Logger,
 		srv:    srv,
 	}
-}
-
-func (s *Server) Start() error {
-	s.Logger.Info("Starting server", zap.String("addr", s.srv.Addr))
-	return s.srv.ListenAndServe()
-}
-
-func (s *Server) Shutdown(ctx context.Context) error {
-	s.Logger.Info("Server shutting down")
-	return s.srv.Shutdown(ctx)
 }

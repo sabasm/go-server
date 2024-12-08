@@ -24,30 +24,40 @@ func main() {
 		WithRoute("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			if _, err := w.Write([]byte("OK")); err != nil {
-				log.Printf("Failed to write health response: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
 			}
 		}).
 		WithRoute("/", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
 			if _, err := w.Write([]byte("Service running")); err != nil {
-				log.Printf("Failed to write response: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
 			}
 		}).
 		Build()
 
+	serverError := make(chan error, 1)
 	go func() {
 		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
-			log.Printf("Server error: %v", err)
+			serverError <- err
 		}
 	}()
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	<-sigChan
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Printf("Server forced to shutdown: %v", err)
+	select {
+	case <-sigChan:
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		if err := srv.Shutdown(ctx); err != nil {
+			cancel()
+			log.Printf("Server forced to shutdown: %v", err)
+			os.Exit(1)
+		}
+		cancel()
+	case err := <-serverError:
+		log.Printf("Server error: %v", err)
+		os.Exit(1)
 	}
 }

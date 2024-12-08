@@ -24,3 +24,19 @@ func TestLoadConfig(t *testing.T) {
 		t.Errorf("Expected APP_ENV=test and APP_PORT=9090, got %v and %v", cfg.Environment, cfg.Port)
 	}
 }
+
+func TestGetEnvAsIntInvalid(t *testing.T) {
+	os.Setenv("APP_PORT", "x")
+	val := getEnvAsInt("APP_PORT", 8080)
+	if val != 8080 {
+		t.Errorf("Expected 8080, got %d", val)
+	}
+}
+
+func TestGetEnvAsBoolInvalid(t *testing.T) {
+	os.Setenv("MONITORING_ENABLED", "x")
+	val := getEnvAsBool("MONITORING_ENABLED", false)
+	if val != false {
+		t.Errorf("Expected false, got %v", val)
+	}
+}

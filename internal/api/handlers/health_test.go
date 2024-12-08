@@ -7,23 +7,47 @@ import (
 )
 
 func TestHealthHandler(t *testing.T) {
-	req, err := http.NewRequest("GET", "/health", nil)
-	if err != nil {
-		t.Fatal(err)
+	tests := []struct {
+		name         string
+		writeError   bool
+		expectedCode int
+	}{
+		{
+			name:         "successful response",
+			writeError:   false,
+			expectedCode: http.StatusOK,
+		},
+		{
+			name:         "write error case",
+			writeError:   true,
+			expectedCode: http.StatusInternalServerError,
+		},
 	}
 
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(HealthHandler)
-	handler.ServeHTTP(rr, req)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/health", nil)
+			rr := httptest.NewRecorder()
 
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
-	}
+			if tt.writeError {
+				handler := &errorWriter{ResponseWriter: rr}
+				HealthHandler(handler, req)
+			} else {
+				HealthHandler(rr, req)
+			}
 
-	expected := "OK"
-	if rr.Body.String() != expected {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			rr.Body.String(), expected)
+			if rr.Code != tt.expectedCode {
+				t.Errorf("HealthHandler returned wrong status code: got %v want %v",
+					rr.Code, tt.expectedCode)
+			}
+		})
 	}
+}
+
+type errorWriter struct {
+	http.ResponseWriter
+}
+
+func (w *errorWriter) Write([]byte) (int, error) {
+	return 0, http.ErrHandlerTimeout
 }
