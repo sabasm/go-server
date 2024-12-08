@@ -1,0 +1,482 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>cmd: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/sabasm/go-server/cmd/main.go (0.0%)</option>
+				
+				<option value="file1">github.com/sabasm/go-server/cmd/server/main.go (70.0%)</option>
+				
+				<option value="file2">github.com/sabasm/go-server/copycmd/command.go (75.0%)</option>
+				
+				<option value="file3">github.com/sabasm/go-server/internal/api/api.go (100.0%)</option>
+				
+				<option value="file4">github.com/sabasm/go-server/internal/api/docs/docs.go (0.0%)</option>
+				
+				<option value="file5">github.com/sabasm/go-server/internal/api/handlers/health.go (50.0%)</option>
+				
+				<option value="file6">github.com/sabasm/go-server/internal/config/config.go (82.4%)</option>
+				
+				<option value="file7">github.com/sabasm/go-server/internal/server/server.go (100.0%)</option>
+				
+				<option value="file8">github.com/sabasm/go-server/main.go (0.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">no coverage</span>
+				<span class="cov1">low coverage</span>
+				<span class="cov2">*</span>
+				<span class="cov3">*</span>
+				<span class="cov4">*</span>
+				<span class="cov5">*</span>
+				<span class="cov6">*</span>
+				<span class="cov7">*</span>
+				<span class="cov8">*</span>
+				<span class="cov9">*</span>
+				<span class="cov10">high coverage</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "context"
+        "log"
+        "net/http"
+        "os"
+        "os/signal"
+        "syscall"
+        "time"
+
+        "github.com/sabasm/go-server/internal/config"
+        "github.com/sabasm/go-server/internal/server"
+)
+
+func main() <span class="cov0" title="0">{
+        configLoader := config.NewConfigLoader()
+        appConfig, err := configLoader.LoadConfig()
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to load configuration: %v", err)
+        }</span>
+
+        <span class="cov0" title="0">srv := server.NewServerBuilder(appConfig).
+                WithRoute("/health", func(w http.ResponseWriter, r *http.Request) </span><span class="cov0" title="0">{
+                        w.WriteHeader(http.StatusOK)
+                        if _, err := w.Write([]byte("OK")); err != nil </span><span class="cov0" title="0">{
+                                log.Printf("Failed to write health response: %v", err)
+                        }</span>
+                }).
+                WithRoute("/", func(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+                        if _, err := w.Write([]byte("Service running")); err != nil </span><span class="cov0" title="0">{
+                                log.Printf("Failed to write response: %v", err)
+                        }</span>
+                }).
+                Build()
+
+        <span class="cov0" title="0">go func() </span><span class="cov0" title="0">{
+                if err := srv.Start(); err != nil &amp;&amp; err != http.ErrServerClosed </span><span class="cov0" title="0">{
+                        log.Printf("Server error: %v", err)
+                }</span>
+        }()
+
+        <span class="cov0" title="0">sigChan := make(chan os.Signal, 1)
+        signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+        &lt;-sigChan
+
+        ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+        defer cancel()
+
+        if err := srv.Shutdown(ctx); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Server forced to shutdown: %v", err)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package main
+
+import (
+        "context"
+        "log"
+        "net/http"
+        "os"
+        "os/signal"
+        "syscall"
+        "time"
+
+        "github.com/sabasm/go-server/internal/config"
+        "github.com/sabasm/go-server/internal/server"
+)
+
+func main() <span class="cov8" title="1">{
+        configLoader := config.NewConfigLoader()
+        appConfig, err := configLoader.LoadConfig()
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to load configuration: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">srv := server.NewServerBuilder(appConfig).
+                WithRoute("/health", func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
+                        w.WriteHeader(http.StatusOK)
+                        if _, err := w.Write([]byte("OK")); err != nil </span><span class="cov0" title="0">{
+                                log.Printf("Failed to write health response: %v", err)
+                        }</span>
+                }).
+                WithRoute("/", func(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+                        if _, err := w.Write([]byte("Service running")); err != nil </span><span class="cov0" title="0">{
+                                log.Printf("Failed to write response: %v", err)
+                        }</span>
+                }).
+                Build()
+
+        <span class="cov8" title="1">go func() </span><span class="cov8" title="1">{
+                if err := srv.Start(); err != nil </span><span class="cov0" title="0">{
+                        log.Printf("Server error: %v", err)
+                }</span>
+        }()
+
+        <span class="cov8" title="1">sigChan := make(chan os.Signal, 1)
+        signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+        &lt;-sigChan
+
+        ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+        defer cancel()
+
+        if err := srv.Shutdown(ctx); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Server forced to shutdown: %v", err)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package copycmd
+
+import (
+        "io"
+        "os"
+)
+
+func CopyFile(source, dest string) error <span class="cov8" title="1">{
+        srcFile, err := os.Open(source)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">defer srcFile.Close()
+
+        destFile, err := os.Create(dest)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">defer destFile.Close()
+
+        _, err = io.Copy(destFile, srcFile)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package api
+
+type API struct{}
+
+func NewAPI() *API <span class="cov8" title="1">{
+        return &amp;API{}
+}</span>
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package docs
+
+type SwaggerInfo struct{}
+
+// @title Hello World Go API
+// @version 1.0
+// @description A simple Hello World API built with Go
+// @host localhost:8080
+// @BasePath /
+
+// @tag.name health
+// @tag.description Health check endpoint
+
+// @tag.name root
+// @tag.description Root endpoint returning service status
+
+// @Summary Health check endpoint
+// @Description Returns OK if the service is healthy
+// @Tags health
+// @Produce plain
+// @Success 200 {string} string "OK"
+// @Router /health [get]
+func HealthCheck() {<span class="cov8" title="1">}</span>
+
+// @Summary Service status endpoint
+// @Description Returns the current status of the service
+// @Tags root
+// @Produce plain
+// @Success 200 {string} string "Service running"
+// @Router / [get]
+func ServiceStatus() {<span class="cov8" title="1">}</span>
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package handlers
+
+import "net/http"
+
+func HealthHandler(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        if _, err := w.Write([]byte("OK")); err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to write response", http.StatusInternalServerError)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package config
+
+import (
+        "log"
+        "os"
+        "strconv"
+
+        "github.com/joho/godotenv"
+)
+
+type AppConfig struct {
+        Environment   string
+        Port          int
+        BaseURL       string
+        RetryCount    int
+        RetryDelay    int
+        Monitoring    bool
+        MetricsPrefix string
+}
+
+type ConfigLoader interface {
+        LoadConfig() (*AppConfig, error)
+}
+
+type configLoader struct{}
+
+func NewConfigLoader() ConfigLoader <span class="cov1" title="1">{
+        return &amp;configLoader{}
+}</span>
+
+func (c *configLoader) LoadConfig() (*AppConfig, error) <span class="cov1" title="1">{
+        err := godotenv.Load(".env")
+        if err != nil </span><span class="cov1" title="1">{
+                log.Println("No .env file found, using default environment variables")
+        }</span>
+
+        <span class="cov1" title="1">config := &amp;AppConfig{
+                Environment:   getEnv("APP_ENV", "development"),
+                Port:          getEnvAsInt("APP_PORT", 8080),
+                BaseURL:       getEnv("BASE_URL", "http://localhost:8080"),
+                RetryCount:    getEnvAsInt("RETRY_COUNT", 3),
+                RetryDelay:    getEnvAsInt("RETRY_DELAY", 1000),
+                Monitoring:    getEnvAsBool("MONITORING_ENABLED", false),
+                MetricsPrefix: getEnv("METRICS_PREFIX", "app"),
+        }
+
+        return config, nil</span>
+}
+
+func getEnv(key string, defaultValue string) string <span class="cov10" title="7">{
+        if value, exists := os.LookupEnv(key); exists </span><span class="cov10" title="7">{
+                return value
+        }</span>
+        <span class="cov0" title="0">return defaultValue</span>
+}
+
+func getEnvAsInt(key string, defaultValue int) int <span class="cov6" title="3">{
+        valueStr := getEnv(key, "")
+        if value, err := strconv.Atoi(valueStr); err == nil </span><span class="cov6" title="3">{
+                return value
+        }</span>
+        <span class="cov0" title="0">return defaultValue</span>
+}
+
+func getEnvAsBool(key string, defaultValue bool) bool <span class="cov1" title="1">{
+        valueStr := getEnv(key, "")
+        if value, err := strconv.ParseBool(valueStr); err == nil </span><span class="cov1" title="1">{
+                return value
+        }</span>
+        <span class="cov0" title="0">return defaultValue</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package server
+
+import (
+        "context"
+        "fmt"
+        "net/http"
+        "time"
+
+        "github.com/gorilla/mux"
+        "github.com/sabasm/go-server/internal/config"
+        "go.uber.org/zap"
+)
+
+type Server struct {
+        Config *config.AppConfig
+        Router *mux.Router
+        Logger *zap.Logger
+        srv    *http.Server
+}
+
+type ServerBuilder struct {
+        Config *config.AppConfig
+        Router *mux.Router
+        Logger *zap.Logger
+}
+
+func NewServerBuilder(cfg *config.AppConfig) *ServerBuilder <span class="cov10" title="2">{
+        logger, _ := zap.NewProduction()
+        return &amp;ServerBuilder{
+                Config: cfg,
+                Router: mux.NewRouter(),
+                Logger: logger,
+        }
+}</span>
+
+func (b *ServerBuilder) WithRoute(pattern string, handler http.HandlerFunc) *ServerBuilder <span class="cov1" title="1">{
+        b.Router.HandleFunc(pattern, handler)
+        return b
+}</span>
+
+func (b *ServerBuilder) Build() *Server <span class="cov10" title="2">{
+        srv := &amp;http.Server{
+                Addr:         fmt.Sprintf(":%d", b.Config.Port),
+                Handler:      b.Router,
+                ReadTimeout:  15 * time.Second,
+                WriteTimeout: 15 * time.Second,
+                IdleTimeout:  60 * time.Second,
+        }
+
+        return &amp;Server{
+                Config: b.Config,
+                Router: b.Router,
+                Logger: b.Logger,
+                srv:    srv,
+        }
+}</span>
+
+func (s *Server) Start() error <span class="cov1" title="1">{
+        s.Logger.Info("Starting server", zap.String("addr", s.srv.Addr))
+        return s.srv.ListenAndServe()
+}</span>
+
+func (s *Server) Shutdown(ctx context.Context) error <span class="cov1" title="1">{
+        s.Logger.Info("Server shutting down")
+        return s.srv.Shutdown(ctx)
+}</span>
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package main
+
+import (
+        "fmt"
+        "log"
+        "os"
+
+        "github.com/joho/godotenv"
+)
+
+func main() <span class="cov0" title="0">{
+        err := godotenv.Load(".env")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal("Error cargando el archivo .env")
+        }</span>
+
+        <span class="cov0" title="0">env := os.Getenv("APP_ENV")
+        port := os.Getenv("APP_PORT")
+
+        fmt.Printf("Ejecutando en %s en el puerto %s\n", env, port)</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
