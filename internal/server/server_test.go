@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"hello-world-go/internal/config"
+	"github.com/sabasm/go-server/internal/config"
 )
 
 func TestServerBuilder(t *testing.T) {

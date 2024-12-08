@@ -3,11 +3,11 @@ package server
 import (
 	"context"
 	"fmt"
-	"hello-world-go/internal/config"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/sabasm/go-server/internal/config"
 	"go.uber.org/zap"
 )
 

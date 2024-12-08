@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"hello-world-go/internal/config"
-	"hello-world-go/internal/server"
+	"github.com/sabasm/go-server/internal/config"
+	"github.com/sabasm/go-server/internal/server"
 )
 
 func getAvailablePort() (int, error) {
