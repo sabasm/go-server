@@ -1,21 +1,53 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"github.com/joho/godotenv"
+	"github.com/sabasm/go-server/internal/api/handlers/health"
+	"github.com/sabasm/go-server/internal/api/handlers/root"
+	"github.com/sabasm/go-server/internal/config"
+	"github.com/sabasm/go-server/internal/server"
 )
 
 func main() {
-	err := godotenv.Load(".env")
+	configLoader := config.NewConfigLoader()
+	appConfig, err := configLoader.LoadConfig()
 	if err != nil {
-		log.Fatal("Error cargando el archivo .env")
+		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	env := os.Getenv("APP_ENV")
-	port := os.Getenv("APP_PORT")
+	srv := server.NewServerBuilder(appConfig).
+		WithRoute("/health", health.New().ServeHTTP).
+		WithRoute("/", root.New().ServeHTTP).
+		Build()
 
-	fmt.Printf("Ejecutando en %s en el puerto %s\n", env, port)
+	serverError := make(chan error, 1)
+	go func() {
+		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
+			serverError <- err
+		}
+	}()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case <-sigChan:
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		if err := srv.Shutdown(ctx); err != nil {
+			cancel()
+			log.Printf("Server forced to shutdown: %v", err)
+			os.Exit(1)
+		}
+		cancel()
+	case err := <-serverError:
+		log.Printf("Server error: %v", err)
+		os.Exit(1)
+	}
 }

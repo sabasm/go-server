@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +14,13 @@ import (
 	"github.com/sabasm/go-server/internal/server"
 )
 
+func validatePort(port int) error {
+	if port <= 0 || port > 65535 {
+		return fmt.Errorf("invalid port: %d", port)
+	}
+	return nil
+}
+
 func main() {
 	configLoader := config.NewConfigLoader()
 	appConfig, err := configLoader.LoadConfig()
@@ -20,18 +28,22 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
+	if err := validatePort(appConfig.Port); err != nil {
+		log.Fatalf("Server startup failed: %v", err)
+	}
+
 	srv := server.NewServerBuilder(appConfig).
 		WithRoute("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			if _, err := w.Write([]byte("OK")); err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				http.Error(w, "Failed to write response", http.StatusInternalServerError)
 				return
 			}
 		}).
 		WithRoute("/", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			if _, err := w.Write([]byte("Service running")); err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
+				http.Error(w, "Failed to write response", http.StatusInternalServerError)
 				return
 			}
 		}).

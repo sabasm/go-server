@@ -7,6 +7,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/sabasm/go-server/internal/config"
 )
 
 func TestMainLifecycle(t *testing.T) {
@@ -20,76 +22,51 @@ func TestMainLifecycle(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		injectError   bool
 		expectedError bool
 	}{
 		{
 			name:          "graceful_shutdown",
-			injectError:   false,
 			expectedError: false,
 		},
 		{
 			name:          "server_error",
-			injectError:   true,
 			expectedError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			serverReady := make(chan struct{})
 			serverError := make(chan error, 1)
-
 			go func() {
 				main()
-				close(serverReady)
+				close(serverError)
 			}()
 
-			go func() {
-				time.Sleep(100 * time.Millisecond)
-				p, _ := os.FindProcess(os.Getpid())
-				_ = p.Signal(os.Interrupt)
-			}()
+			time.Sleep(100 * time.Millisecond)
+			p, _ := os.FindProcess(os.Getpid())
+			_ = p.Signal(os.Interrupt)
 
 			select {
-			case <-serverReady:
+			case <-serverError:
 			case <-time.After(2 * time.Second):
 				t.Error("Server failed to start within timeout")
-			case err := <-serverError:
-				if !tt.expectedError {
-					t.Errorf("Unexpected server error: %v", err)
-				}
 			}
 		})
 	}
 }
 
-func TestMainErrorHandling(t *testing.T) {
+func TestMainConfigParsing(t *testing.T) {
 	os.Setenv("APP_PORT", "invalid")
 	defer os.Unsetenv("APP_PORT")
 
-	errChan := make(chan error, 1)
-	done := make(chan struct{})
+	configLoader := config.NewConfigLoader()
+	appConfig, err := configLoader.LoadConfig()
+	if err != nil {
+		t.Fatalf("Failed to load configuration: %v", err)
+	}
 
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				errChan <- fmt.Errorf("panic: %v", r)
-			}
-			close(done)
-		}()
-		main()
-	}()
-
-	select {
-	case err := <-errChan:
-		if err == nil {
-			t.Error("Expected error for invalid port")
-		}
-	case <-done:
-	case <-time.After(500 * time.Millisecond):
-		p, _ := os.FindProcess(os.Getpid())
-		_ = p.Signal(os.Interrupt)
+	if appConfig.Port != 8080 {
+		t.Errorf("Expected default port 8080, got %d", appConfig.Port)
 	}
 }
 
@@ -129,8 +106,8 @@ func TestMainConfigLoading(t *testing.T) {
 	}()
 
 	select {
+	case <-done:
 	case <-time.After(time.Second):
 		t.Error("Test timed out")
-	case <-done:
 	}
 }

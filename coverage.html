@@ -55,7 +55,7 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/sabasm/go-server/cmd/main.go (46.4%)</option>
+				<option value="file0">github.com/sabasm/go-server/cmd/main.go (48.5%)</option>
 				
 				<option value="file1">github.com/sabasm/go-server/cmd/server/main.go (46.4%)</option>
 				
@@ -67,13 +67,15 @@
 				
 				<option value="file5">github.com/sabasm/go-server/internal/api/handlers/health/health.go (77.8%)</option>
 				
-				<option value="file6">github.com/sabasm/go-server/internal/api/handlers/root/root.go (77.8%)</option>
+				<option value="file6">github.com/sabasm/go-server/internal/api/handlers/responsewriter.go (100.0%)</option>
 				
-				<option value="file7">github.com/sabasm/go-server/internal/config/config.go (100.0%)</option>
+				<option value="file7">github.com/sabasm/go-server/internal/api/handlers/root/root.go (77.8%)</option>
 				
-				<option value="file8">github.com/sabasm/go-server/internal/server/server.go (100.0%)</option>
+				<option value="file8">github.com/sabasm/go-server/internal/config/config.go (100.0%)</option>
 				
-				<option value="file9">github.com/sabasm/go-server/main.go (0.0%)</option>
+				<option value="file9">github.com/sabasm/go-server/internal/server/server.go (100.0%)</option>
+				
+				<option value="file10">github.com/sabasm/go-server/main.go (65.0%)</option>
 				
 				</select>
 			</div>
@@ -100,6 +102,7 @@
 
 import (
         "context"
+        "fmt"
         "log"
         "net/http"
         "os"
@@ -111,49 +114,60 @@ import (
         "github.com/sabasm/go-server/internal/server"
 )
 
-func main() <span class="cov10" title="4">{
+func validatePort(port int) error <span class="cov10" title="3">{
+        if port &lt;= 0 || port &gt; 65535 </span><span class="cov0" title="0">{
+                return fmt.Errorf("invalid port: %d", port)
+        }</span>
+        <span class="cov10" title="3">return nil</span>
+}
+
+func main() <span class="cov10" title="3">{
         configLoader := config.NewConfigLoader()
         appConfig, err := configLoader.LoadConfig()
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatalf("Failed to load configuration: %v", err)
         }</span>
 
-        <span class="cov10" title="4">srv := server.NewServerBuilder(appConfig).
+        <span class="cov10" title="3">if err := validatePort(appConfig.Port); err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Server startup failed: %v", err)
+        }</span>
+
+        <span class="cov10" title="3">srv := server.NewServerBuilder(appConfig).
                 WithRoute("/health", func(w http.ResponseWriter, r *http.Request) </span><span class="cov0" title="0">{
                         w.WriteHeader(http.StatusOK)
                         if _, err := w.Write([]byte("OK")); err != nil </span><span class="cov0" title="0">{
-                                w.WriteHeader(http.StatusInternalServerError)
+                                http.Error(w, "Failed to write response", http.StatusInternalServerError)
                                 return
                         }</span>
                 }).
                 WithRoute("/", func(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
                         w.WriteHeader(http.StatusOK)
                         if _, err := w.Write([]byte("Service running")); err != nil </span><span class="cov0" title="0">{
-                                w.WriteHeader(http.StatusInternalServerError)
+                                http.Error(w, "Failed to write response", http.StatusInternalServerError)
                                 return
                         }</span>
                 }).
                 Build()
 
-        <span class="cov10" title="4">serverError := make(chan error, 1)
-        go func() </span><span class="cov10" title="4">{
+        <span class="cov10" title="3">serverError := make(chan error, 1)
+        go func() </span><span class="cov10" title="3">{
                 if err := srv.Start(); err != nil &amp;&amp; err != http.ErrServerClosed </span><span class="cov0" title="0">{
                         serverError &lt;- err
                 }</span>
         }()
 
-        <span class="cov10" title="4">sigChan := make(chan os.Signal, 1)
+        <span class="cov10" title="3">sigChan := make(chan os.Signal, 1)
         signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
         select </span>{
-        case &lt;-sigChan:<span class="cov10" title="4">
+        case &lt;-sigChan:<span class="cov10" title="3">
                 ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
                 if err := srv.Shutdown(ctx); err != nil </span><span class="cov0" title="0">{
                         cancel()
                         log.Printf("Server forced to shutdown: %v", err)
                         os.Exit(1)
                 }</span>
-                <span class="cov10" title="4">cancel()</span>
+                <span class="cov10" title="3">cancel()</span>
         case err := &lt;-serverError:<span class="cov0" title="0">
                 log.Printf("Server error: %v", err)
                 os.Exit(1)</span>
@@ -320,7 +334,45 @@ func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span 
 }
 </pre>
 		
-		<pre class="file" id="file6" style="display: none">package root
+		<pre class="file" id="file6" style="display: none">package handlers
+
+import (
+        "bytes"
+        "net/http"
+)
+
+type BufferedResponseWriter struct {
+        http.ResponseWriter
+        buffer     *bytes.Buffer
+        statusCode int
+}
+
+func NewBufferedResponseWriter(w http.ResponseWriter) *BufferedResponseWriter <span class="cov10" title="2">{
+        return &amp;BufferedResponseWriter{
+                ResponseWriter: w,
+                buffer:         new(bytes.Buffer),
+                statusCode:     http.StatusOK,
+        }
+}</span>
+
+func (b *BufferedResponseWriter) WriteHeader(code int) <span class="cov10" title="2">{
+        b.statusCode = code
+}</span>
+
+func (b *BufferedResponseWriter) Write(data []byte) (int, error) <span class="cov10" title="2">{
+        return b.buffer.Write(data)
+}</span>
+
+func (b *BufferedResponseWriter) Flush() error <span class="cov10" title="2">{
+        if b.statusCode != http.StatusOK </span><span class="cov1" title="1">{
+                b.ResponseWriter.WriteHeader(b.statusCode)
+        }</span>
+        <span class="cov10" title="2">_, err := b.ResponseWriter.Write(b.buffer.Bytes())
+        return err</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package root
 
 import (
         "net/http"
@@ -348,7 +400,7 @@ func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span cl
 }
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package config
+		<pre class="file" id="file8" style="display: none">package config
 
 import (
         "log"
@@ -421,7 +473,7 @@ func getEnvAsBool(key string, defaultValue bool) bool <span class="cov3" title="
 }
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">// internal/server/server.go
+		<pre class="file" id="file9" style="display: none">// internal/server/server.go
 package server
 
 import (
@@ -490,26 +542,58 @@ func (b *ServerBuilder) Build() *Server <span class="cov10" title="2">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package main
+		<pre class="file" id="file10" style="display: none">package main
 
 import (
-        "fmt"
+        "context"
         "log"
+        "net/http"
         "os"
+        "os/signal"
+        "syscall"
+        "time"
 
-        "github.com/joho/godotenv"
+        "github.com/sabasm/go-server/internal/api/handlers/health"
+        "github.com/sabasm/go-server/internal/api/handlers/root"
+        "github.com/sabasm/go-server/internal/config"
+        "github.com/sabasm/go-server/internal/server"
 )
 
-func main() <span class="cov0" title="0">{
-        err := godotenv.Load(".env")
+func main() <span class="cov8" title="1">{
+        configLoader := config.NewConfigLoader()
+        appConfig, err := configLoader.LoadConfig()
         if err != nil </span><span class="cov0" title="0">{
-                log.Fatal("Error cargando el archivo .env")
+                log.Fatalf("Failed to load configuration: %v", err)
         }</span>
 
-        <span class="cov0" title="0">env := os.Getenv("APP_ENV")
-        port := os.Getenv("APP_PORT")
+        <span class="cov8" title="1">srv := server.NewServerBuilder(appConfig).
+                WithRoute("/health", health.New().ServeHTTP).
+                WithRoute("/", root.New().ServeHTTP).
+                Build()
 
-        fmt.Printf("Ejecutando en %s en el puerto %s\n", env, port)</span>
+        serverError := make(chan error, 1)
+        go func() </span><span class="cov8" title="1">{
+                if err := srv.Start(); err != nil &amp;&amp; err != http.ErrServerClosed </span><span class="cov0" title="0">{
+                        serverError &lt;- err
+                }</span>
+        }()
+
+        <span class="cov8" title="1">sigChan := make(chan os.Signal, 1)
+        signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+        select </span>{
+        case &lt;-sigChan:<span class="cov8" title="1">
+                ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+                if err := srv.Shutdown(ctx); err != nil </span><span class="cov0" title="0">{
+                        cancel()
+                        log.Printf("Server forced to shutdown: %v", err)
+                        os.Exit(1)
+                }</span>
+                <span class="cov8" title="1">cancel()</span>
+        case err := &lt;-serverError:<span class="cov0" title="0">
+                log.Printf("Server error: %v", err)
+                os.Exit(1)</span>
+        }
 }
 </pre>
 		

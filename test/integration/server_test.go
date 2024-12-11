@@ -1,4 +1,3 @@
-// test/integration/server_test.go
 package integration
 
 import (
@@ -10,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sabasm/go-server/internal/api/handlers/health"
+	"github.com/sabasm/go-server/internal/api/handlers/root"
 	"github.com/sabasm/go-server/internal/config"
 	"github.com/sabasm/go-server/internal/server"
 )
@@ -30,30 +31,21 @@ func getAvailablePort() (int, error) {
 }
 
 func TestIntegrationServerStartup(t *testing.T) {
-	port, portErr := getAvailablePort()
-	if portErr != nil {
-		t.Fatalf("Failed to get available port: %v", portErr)
+	port, err := getAvailablePort()
+	if err != nil {
+		t.Fatalf("Failed to get available port: %v", err)
 	}
 
 	configLoader := config.NewConfigLoader()
-	appConfig, configErr := configLoader.LoadConfig()
-	if configErr != nil {
-		t.Fatalf("Failed to load config: %v", configErr)
+	appConfig, err := configLoader.LoadConfig()
+	if err != nil {
+		t.Fatalf("Failed to load config: %v", err)
 	}
 	appConfig.Port = port
 
 	srv := server.NewServerBuilder(appConfig).
-		WithRoute("/test", func(w http.ResponseWriter, r *http.Request) {
-			response := []byte("test response")
-			n, writeErr := w.Write(response)
-			if writeErr != nil {
-				t.Errorf("Failed to write response: %v", writeErr)
-				return
-			}
-			if n != len(response) {
-				t.Errorf("Failed to write complete response: wrote %d bytes of %d", n, len(response))
-			}
-		}).
+		WithRoute("/health", health.New().ServeHTTP).
+		WithRoute("/", root.New().ServeHTTP).
 		Build()
 
 	var wg sync.WaitGroup
@@ -62,37 +54,125 @@ func TestIntegrationServerStartup(t *testing.T) {
 
 	go func() {
 		defer wg.Done()
-		startErr := srv.Start()
-		if startErr != nil && startErr != http.ErrServerClosed {
-			errChan <- startErr
+		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
+			errChan <- err
 		}
 	}()
 
 	time.Sleep(100 * time.Millisecond)
 
-	resp, httpErr := http.Get(fmt.Sprintf("http://localhost:%d/test", port))
-	if httpErr != nil {
-		t.Fatalf("Failed to make request: %v", httpErr)
-	}
-	defer resp.Body.Close()
+	t.Run("health endpoint", func(t *testing.T) {
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/health", port))
+		if err != nil {
+			t.Fatalf("Failed to make request: %v", err)
+		}
+		defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status OK; got %v", resp.Status)
-	}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status OK; got %v", resp.Status)
+		}
+	})
+
+	t.Run("root endpoint", func(t *testing.T) {
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/", port))
+		if err != nil {
+			t.Fatalf("Failed to make request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status OK; got %v", resp.Status)
+		}
+	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	shutdownErr := srv.Shutdown(ctx)
-	if shutdownErr != nil {
-		t.Errorf("Server shutdown error: %v", shutdownErr)
+	if err := srv.Shutdown(ctx); err != nil {
+		t.Errorf("Server shutdown error: %v", err)
 	}
 
 	wg.Wait()
 
 	select {
-	case serverErr := <-errChan:
-		t.Errorf("Server error: %v", serverErr)
+	case err := <-errChan:
+		t.Errorf("Server error: %v", err)
 	default:
 	}
+}
+
+func TestIntegrationHandlerResponses(t *testing.T) {
+	port, err := getAvailablePort()
+	if err != nil {
+		t.Fatalf("Failed to get available port: %v", err)
+	}
+
+	configLoader := config.NewConfigLoader()
+	appConfig, err := configLoader.LoadConfig()
+	if err != nil {
+		t.Fatalf("Failed to load config: %v", err)
+	}
+	appConfig.Port = port
+
+	srv := server.NewServerBuilder(appConfig).
+		WithRoute("/health", health.New().ServeHTTP).
+		WithRoute("/", root.New().ServeHTTP).
+		Build()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
+			t.Errorf("Unexpected server error: %v", err)
+		}
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+
+	testCases := []struct {
+		name         string
+		endpoint     string
+		expectedCode int
+		expectedBody string
+	}{
+		{
+			name:         "health check returns OK",
+			endpoint:     "/health",
+			expectedCode: http.StatusOK,
+			expectedBody: "OK",
+		},
+		{
+			name:         "root returns service status",
+			endpoint:     "/",
+			expectedCode: http.StatusOK,
+			expectedBody: "Service running",
+		},
+	}
+
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			resp, err := client.Get(fmt.Sprintf("http://localhost:%d%s", port, tc.endpoint))
+			if err != nil {
+				t.Fatalf("Request failed: %v", err)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != tc.expectedCode {
+				t.Errorf("Expected status %d; got %d", tc.expectedCode, resp.StatusCode)
+			}
+		})
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		t.Errorf("Server shutdown error: %v", err)
+	}
+
+	wg.Wait()
 }
