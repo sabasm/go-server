@@ -6,14 +6,16 @@ import (
 )
 
 type Config struct {
-	Port     int
 	Host     string
+	Port     int
 	BasePath string
-	Options  struct {
-		ReadTimeout  time.Duration
-		WriteTimeout time.Duration
-		IdleTimeout  time.Duration
-	}
+	Options  Options
+}
+
+type Options struct {
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	IdleTimeout  time.Duration
 }
 
 func (c *Config) GetAddress() string {

@@ -10,9 +10,9 @@ import (
 
 type Server struct {
 	config *Config
-	srv    *http.Server
 	router *mux.Router
 	logger *zap.Logger
+	srv    *http.Server
 }
 
 func (s *Server) Start() error {

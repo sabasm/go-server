@@ -8,14 +8,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type ServerBuilder interface {
-	WithRoute(pattern string, handler http.HandlerFunc) ServerBuilder
-	WithMiddleware(middleware mux.MiddlewareFunc) ServerBuilder
-	WithLogger(logger *zap.Logger) ServerBuilder
-	WithTimeout(read, write, idle time.Duration) ServerBuilder
-	Build() *Server
-}
-
 type serverBuilder struct {
 	config   *Config
 	router   *mux.Router
@@ -56,7 +48,7 @@ func (b *serverBuilder) WithTimeout(read, write, idle time.Duration) ServerBuild
 	return b
 }
 
-func (b *serverBuilder) Build() *Server {
+func (b *serverBuilder) Build() ServerInterface {
 	if b.logger == nil {
 		b.logger, _ = zap.NewProduction()
 	}

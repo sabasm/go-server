@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -25,9 +26,12 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	appConfig := config.LoadConfig()
+	port, _ := strconv.Atoi(appConfig.AppPort)
+
 	cfg := &server.Config{
-		Host:     config.LoadConfig().AppHost,
-		Port:     config.LoadConfig().AppPort,
+		Host:     appConfig.AppHost,
+		Port:     port,
 		BasePath: "/",
 		Options: server.Options{
 			ReadTimeout:  15 * time.Second,
@@ -53,12 +57,12 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("Error shutting down server: %v", err)
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Error shutting down server: %v", err)
+		shutdownCancel()
+		os.Exit(1)
 	}
-
+	shutdownCancel()
 	log.Println("Server stopped gracefully")
 }

@@ -1,19 +1,16 @@
 package config
 
-import (
-	"os"
-	"strconv"
-)
+import "os"
 
-// Config holds the application's configuration
 type Config struct {
+	AppHost string
 	AppPort string
 	Debug   bool
 }
 
-// LoadConfig reads environment variables into Config
 func LoadConfig() *Config {
 	return &Config{
+		AppHost: getEnv("APP_HOST", "localhost"),
 		AppPort: getEnv("APP_PORT", "8080"),
 		Debug:   getEnvAsBool("DEBUG", false),
 	}
@@ -26,10 +23,9 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-func getEnvAsBool(key string, fallback bool) bool {
-	valStr := getEnv(key, "")
-	if val, err := strconv.ParseBool(valStr); err == nil {
-		return val
+func getEnvAsBool(name string, fallback bool) bool {
+	if value, exists := os.LookupEnv(name); exists {
+		return value == "true"
 	}
 	return fallback
 }
