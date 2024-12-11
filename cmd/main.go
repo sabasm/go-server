@@ -1,8 +1,8 @@
+// cmd/main.go
 package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -10,66 +10,55 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/sabasm/go-server/internal/config"
-	"github.com/sabasm/go-server/internal/server"
+	"github.com/sabasm/go-server/pkg/config"
+	"github.com/sabasm/go-server/pkg/server"
 )
 
-func validatePort(port int) error {
-	if port <= 0 || port > 65535 {
-		return fmt.Errorf("invalid port: %d", port)
-	}
-	return nil
+func rootHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("Welcome to My MVP App"))
+}
+
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("OK"))
 }
 
 func main() {
-	configLoader := config.NewConfigLoader()
-	appConfig, err := configLoader.LoadConfig()
-	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+	cfg := &server.Config{
+		Host:     config.LoadConfig().AppHost,
+		Port:     config.LoadConfig().AppPort,
+		BasePath: "/",
+		Options: server.Options{
+			ReadTimeout:  15 * time.Second,
+			WriteTimeout: 15 * time.Second,
+			IdleTimeout:  60 * time.Second,
+		},
 	}
 
-	if err := validatePort(appConfig.Port); err != nil {
-		log.Fatalf("Server startup failed: %v", err)
-	}
+	log.Printf("Loaded config: %+v", cfg)
 
-	srv := server.NewServerBuilder(appConfig).
-		WithRoute("/health", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			if _, err := w.Write([]byte("OK")); err != nil {
-				http.Error(w, "Failed to write response", http.StatusInternalServerError)
-				return
-			}
-		}).
-		WithRoute("/", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			if _, err := w.Write([]byte("Service running")); err != nil {
-				http.Error(w, "Failed to write response", http.StatusInternalServerError)
-				return
-			}
-		}).
+	srv := server.NewBuilder(cfg).
+		WithRoute("/", rootHandler).
+		WithRoute("/health", healthHandler).
 		Build()
 
-	serverError := make(chan error, 1)
 	go func() {
 		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
-			serverError <- err
+			log.Fatalf("Server error: %v", err)
 		}
 	}()
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	<-stop
 
-	select {
-	case <-sigChan:
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		if err := srv.Shutdown(ctx); err != nil {
-			cancel()
-			log.Printf("Server forced to shutdown: %v", err)
-			os.Exit(1)
-		}
-		cancel()
-	case err := <-serverError:
-		log.Printf("Server error: %v", err)
-		os.Exit(1)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("Error shutting down server: %v", err)
 	}
+
+	log.Println("Server stopped gracefully")
 }

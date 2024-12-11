@@ -77,6 +77,14 @@
 				
 				<option value="file10">github.com/sabasm/go-server/main.go (65.0%)</option>
 				
+				<option value="file11">github.com/sabasm/go-server/pkg/middleware/logging.go (100.0%)</option>
+				
+				<option value="file12">github.com/sabasm/go-server/pkg/server/builder.go (71.4%)</option>
+				
+				<option value="file13">github.com/sabasm/go-server/pkg/server/config.go (100.0%)</option>
+				
+				<option value="file14">github.com/sabasm/go-server/pkg/server/server.go (100.0%)</option>
+				
 				</select>
 			</div>
 			<div id="legend">
@@ -595,6 +603,161 @@ func main() <span class="cov8" title="1">{
                 os.Exit(1)</span>
         }
 }
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package middleware
+
+import (
+        "net/http"
+        "time"
+
+        "github.com/gorilla/mux"
+        "go.uber.org/zap"
+)
+
+func LoggingMiddleware(logger *zap.Logger) mux.MiddlewareFunc <span class="cov8" title="1">{
+        return func(next http.Handler) http.Handler </span><span class="cov8" title="1">{
+                return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
+                        start := time.Now()
+                        next.ServeHTTP(w, r)
+                        logger.Info("request processed",
+                                zap.String("method", r.Method),
+                                zap.String("path", r.URL.Path),
+                                zap.Duration("duration", time.Since(start)))
+                }</span>)
+        }
+}
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package server
+
+import (
+        "net/http"
+        "time"
+
+        "github.com/gorilla/mux"
+        "go.uber.org/zap"
+)
+
+type ServerBuilder interface {
+        WithRoute(pattern string, handler http.HandlerFunc) ServerBuilder
+        WithMiddleware(middleware mux.MiddlewareFunc) ServerBuilder
+        WithLogger(logger *zap.Logger) ServerBuilder
+        WithTimeout(read, write, idle time.Duration) ServerBuilder
+        Build() *Server
+}
+
+type serverBuilder struct {
+        config   *Config
+        router   *mux.Router
+        logger   *zap.Logger
+        timeouts struct {
+                read  time.Duration
+                write time.Duration
+                idle  time.Duration
+        }
+}
+
+func NewBuilder(cfg *Config) ServerBuilder <span class="cov10" title="4">{
+        return &amp;serverBuilder{
+                config: cfg,
+                router: mux.NewRouter(),
+        }
+}</span>
+
+func (b *serverBuilder) WithRoute(pattern string, handler http.HandlerFunc) ServerBuilder <span class="cov5" title="2">{
+        b.router.HandleFunc(pattern, handler)
+        return b
+}</span>
+
+func (b *serverBuilder) WithMiddleware(middleware mux.MiddlewareFunc) ServerBuilder <span class="cov0" title="0">{
+        b.router.Use(middleware)
+        return b
+}</span>
+
+func (b *serverBuilder) WithLogger(logger *zap.Logger) ServerBuilder <span class="cov0" title="0">{
+        b.logger = logger
+        return b
+}</span>
+
+func (b *serverBuilder) WithTimeout(read, write, idle time.Duration) ServerBuilder <span class="cov1" title="1">{
+        b.timeouts.read = read
+        b.timeouts.write = write
+        b.timeouts.idle = idle
+        return b
+}</span>
+
+func (b *serverBuilder) Build() *Server <span class="cov10" title="4">{
+        if b.logger == nil </span><span class="cov10" title="4">{
+                b.logger, _ = zap.NewProduction()
+        }</span>
+
+        <span class="cov10" title="4">return &amp;Server{
+                config: b.config,
+                router: b.router,
+                logger: b.logger,
+                srv: &amp;http.Server{
+                        Addr:         b.config.GetAddress(),
+                        Handler:      b.router,
+                        ReadTimeout:  b.timeouts.read,
+                        WriteTimeout: b.timeouts.write,
+                        IdleTimeout:  b.timeouts.idle,
+                },
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package server
+
+import (
+        "fmt"
+        "time"
+)
+
+type Config struct {
+        Port     int
+        Host     string
+        BasePath string
+        Options  struct {
+                ReadTimeout  time.Duration
+                WriteTimeout time.Duration
+                IdleTimeout  time.Duration
+        }
+}
+
+func (c *Config) GetAddress() string <span class="cov10" title="4">{
+        return fmt.Sprintf("%s:%d", c.Host, c.Port)
+}</span>
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">package server
+
+import (
+        "context"
+        "net/http"
+
+        "github.com/gorilla/mux"
+        "go.uber.org/zap"
+)
+
+type Server struct {
+        config *Config
+        srv    *http.Server
+        router *mux.Router
+        logger *zap.Logger
+}
+
+func (s *Server) Start() error <span class="cov8" title="1">{
+        s.logger.Info("starting server",
+                zap.String("addr", s.srv.Addr),
+                zap.String("base_path", s.config.BasePath))
+        return s.srv.ListenAndServe()
+}</span>
+
+func (s *Server) Shutdown(ctx context.Context) error <span class="cov8" title="1">{
+        s.logger.Info("shutting down server")
+        return s.srv.Shutdown(ctx)
+}</span>
 </pre>
 		
 		</div>
