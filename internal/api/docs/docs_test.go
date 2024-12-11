@@ -2,17 +2,16 @@ package docs
 
 import "testing"
 
-func TestSwaggerDocumentation(t *testing.T) {
-	info := SwaggerInfo{}
-	if info != (SwaggerInfo{}) {
-		t.Error("Expected empty SwaggerInfo struct")
+func TestHealthCheckDocumentation(t *testing.T) {
+	info := HealthCheck()
+	if info.BasePath != "/health" {
+		t.Errorf("Expected /health base path, got %s", info.BasePath)
 	}
 }
 
-func TestHealthCheckDocumentation(t *testing.T) {
-	HealthCheck()
-}
-
 func TestServiceStatusDocumentation(t *testing.T) {
-	ServiceStatus()
+	info := ServiceStatus()
+	if info.BasePath != "/" {
+		t.Errorf("Expected / base path, got %s", info.BasePath)
+	}
 }

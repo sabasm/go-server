@@ -29,8 +29,7 @@ func NewConfigLoader() ConfigLoader {
 }
 
 func (c *configLoader) LoadConfig() (*AppConfig, error) {
-	err := godotenv.Load(".env")
-	if err != nil {
+	if err := godotenv.Load(".env"); err != nil {
 		log.Println("No .env file found, using default environment variables")
 	}
 
@@ -47,8 +46,9 @@ func (c *configLoader) LoadConfig() (*AppConfig, error) {
 	return config, nil
 }
 
-func getEnv(key string, defaultValue string) string {
-	if value, exists := os.LookupEnv(key); exists {
+func getEnv(key, defaultValue string) string {
+	value, exists := os.LookupEnv(key)
+	if exists {
 		return value
 	}
 	return defaultValue

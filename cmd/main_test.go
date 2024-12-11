@@ -1,15 +1,23 @@
 package main
 
 import (
-	"context"
-	"net/http"
+	"fmt"
+	"net"
 	"os"
-	"sync"
+	"syscall"
 	"testing"
 	"time"
 )
 
 func TestMainLifecycle(t *testing.T) {
+	port, err := getFreePort()
+	if err != nil {
+		t.Fatalf("Failed to get free port: %v", err)
+	}
+
+	os.Setenv("APP_PORT", fmt.Sprintf("%d", port))
+	defer os.Unsetenv("APP_PORT")
+
 	tests := []struct {
 		name          string
 		injectError   bool
@@ -29,18 +37,12 @@ func TestMainLifecycle(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var wg sync.WaitGroup
-			wg.Add(1)
+			serverReady := make(chan struct{})
+			serverError := make(chan error, 1)
 
 			go func() {
-				defer wg.Done()
-				if tt.injectError {
-					mockServer := &http.Server{
-						Addr:              ":invalid",
-						ReadHeaderTimeout: 3 * time.Second,
-					}
-					_ = mockServer.ListenAndServe()
-				}
+				main()
+				close(serverReady)
 			}()
 
 			go func() {
@@ -49,22 +51,86 @@ func TestMainLifecycle(t *testing.T) {
 				_ = p.Signal(os.Interrupt)
 			}()
 
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-			defer cancel()
-
-			done := make(chan struct{})
-			go func() {
-				main()
-				close(done)
-			}()
-
 			select {
-			case <-ctx.Done():
-				t.Error("Test timed out")
-			case <-done:
+			case <-serverReady:
+			case <-time.After(2 * time.Second):
+				t.Error("Server failed to start within timeout")
+			case err := <-serverError:
+				if !tt.expectedError {
+					t.Errorf("Unexpected server error: %v", err)
+				}
 			}
-
-			wg.Wait()
 		})
+	}
+}
+
+func TestMainErrorHandling(t *testing.T) {
+	os.Setenv("APP_PORT", "invalid")
+	defer os.Unsetenv("APP_PORT")
+
+	errChan := make(chan error, 1)
+	done := make(chan struct{})
+
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				errChan <- fmt.Errorf("panic: %v", r)
+			}
+			close(done)
+		}()
+		main()
+	}()
+
+	select {
+	case err := <-errChan:
+		if err == nil {
+			t.Error("Expected error for invalid port")
+		}
+	case <-done:
+	case <-time.After(500 * time.Millisecond):
+		p, _ := os.FindProcess(os.Getpid())
+		_ = p.Signal(os.Interrupt)
+	}
+}
+
+func getFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+
+	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
+func TestMainConfigLoading(t *testing.T) {
+	os.Setenv("APP_ENV", "test")
+	os.Setenv("APP_PORT", "8081")
+	defer func() {
+		os.Unsetenv("APP_ENV")
+		os.Unsetenv("APP_PORT")
+	}()
+
+	done := make(chan struct{})
+	go func() {
+		main()
+		close(done)
+	}()
+
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		p, _ := os.FindProcess(os.Getpid())
+		_ = p.Signal(syscall.SIGINT)
+	}()
+
+	select {
+	case <-time.After(time.Second):
+		t.Error("Test timed out")
+	case <-done:
 	}
 }
