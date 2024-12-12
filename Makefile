@@ -16,7 +16,7 @@ setup:
 	@chmod +x scripts/setup.sh
 	@./scripts/setup.sh
 
-check: lint vet fmt test
+check: fmt lint vet test
 
 lint:
 	@$(GOLINT) run ./...
