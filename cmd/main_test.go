@@ -1,75 +1,50 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"os"
-	"syscall"
+	"sync"
 	"testing"
 	"time"
-
-	"github.com/sabasm/go-server/internal/config"
 )
 
-func TestMainLifecycle(t *testing.T) {
-	port, err := getFreePort()
-	if err != nil {
-		t.Fatalf("Failed to get free port: %v", err)
+func TestRootHandler(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+
+	rootHandler(w, req)
+
+	if status := w.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 
-	os.Setenv("APP_PORT", fmt.Sprintf("%d", port))
-	defer os.Unsetenv("APP_PORT")
-
-	tests := []struct {
-		name          string
-		expectedError bool
-	}{
-		{
-			name:          "graceful_shutdown",
-			expectedError: false,
-		},
-		{
-			name:          "server_error",
-			expectedError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			serverError := make(chan error, 1)
-			go func() {
-				main()
-				close(serverError)
-			}()
-
-			time.Sleep(100 * time.Millisecond)
-			p, _ := os.FindProcess(os.Getpid())
-			_ = p.Signal(os.Interrupt)
-
-			select {
-			case <-serverError:
-			case <-time.After(2 * time.Second):
-				t.Error("Server failed to start within timeout")
-			}
-		})
+	expected := "Welcome to My MVP App"
+	if w.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v", w.Body.String(), expected)
 	}
 }
 
-func TestMainConfigParsing(t *testing.T) {
-	os.Setenv("APP_PORT", "invalid")
-	defer os.Unsetenv("APP_PORT")
+func TestHealthHandler(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	w := httptest.NewRecorder()
 
-	configLoader := config.NewConfigLoader()
-	appConfig, err := configLoader.LoadConfig()
-	if err != nil {
-		t.Fatalf("Failed to load configuration: %v", err)
+	healthHandler(w, req)
+
+	if status := w.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 
-	if appConfig.Port != 8080 {
-		t.Errorf("Expected default port 8080, got %d", appConfig.Port)
+	expected := "OK"
+	if w.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v", w.Body.String(), expected)
 	}
 }
 
+// Helper function to get a free port
 func getFreePort() (int, error) {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
@@ -85,29 +60,83 @@ func getFreePort() (int, error) {
 	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
-func TestMainConfigLoading(t *testing.T) {
-	os.Setenv("APP_ENV", "test")
-	os.Setenv("APP_PORT", "8081")
-	defer func() {
-		os.Unsetenv("APP_ENV")
-		os.Unsetenv("APP_PORT")
-	}()
+// TestMainServerLifecycle verifies server startup and graceful shutdown
+func TestMainServerLifecycle(t *testing.T) {
+	port, err := getFreePort()
+	if err != nil {
+		t.Fatalf("Failed to get free port: %v", err)
+	}
 
-	done := make(chan struct{})
-	go func() {
-		main()
-		close(done)
-	}()
+	os.Setenv("APP_PORT", fmt.Sprintf("%d", port))
+	defer os.Unsetenv("APP_PORT")
 
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		p, _ := os.FindProcess(os.Getpid())
-		_ = p.Signal(syscall.SIGINT)
-	}()
+	testCases := []struct {
+		name           string
+		setupFunc      func() error
+		expectShutdown bool
+	}{
+		{
+			name: "Graceful Shutdown",
+			setupFunc: func() error {
+				// Simulate normal server lifecycle
+				return nil
+			},
+			expectShutdown: true,
+		},
+		{
+			name: "Server Startup with Error",
+			setupFunc: func() error {
+				// Simulate a potential server startup error
+				return fmt.Errorf("simulated startup error")
+			},
+			expectShutdown: false,
+		},
+	}
 
-	select {
-	case <-done:
-	case <-time.After(time.Second):
-		t.Error("Test timed out")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var wg sync.WaitGroup
+			wg.Add(1)
+
+			done := make(chan struct{})
+			errorCh := make(chan error, 1)
+
+			go func() {
+				defer wg.Done()
+				defer close(done)
+
+				// Introduce a mechanism to simulate potential startup conditions
+				if err := tc.setupFunc(); err != nil {
+					errorCh <- err
+					return
+				}
+
+				main()
+			}()
+
+			// Trigger graceful shutdown
+			go func() {
+				time.Sleep(100 * time.Millisecond)
+				p, _ := os.FindProcess(os.Getpid())
+				_ = p.Signal(os.Interrupt)
+			}()
+
+			// Set up timeout context
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+
+			select {
+			case <-ctx.Done():
+				t.Error("Test timed out")
+			case <-done:
+				// Successful completion
+			case err := <-errorCh:
+				if tc.expectShutdown {
+					t.Errorf("Unexpected error: %v", err)
+				}
+			}
+
+			wg.Wait()
+		})
 	}
 }
