@@ -9,32 +9,36 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/sabasm/go-server/internal/config"
 	"github.com/sabasm/go-server/internal/server"
+	"github.com/sabasm/go-server/pkg/api/handlers/health"
+	"github.com/sabasm/go-server/pkg/api/handlers/root"
+	"github.com/sabasm/go-server/pkg/middleware"
+	"go.uber.org/zap"
 )
 
 func main() {
 	configLoader := config.NewConfigLoader()
-	appConfig, err := configLoader.LoadConfig()
+	cfg, err := configLoader.LoadConfig()
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	srv := server.NewServerBuilder(appConfig).
-		WithRoute("/health", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			if _, err := w.Write([]byte("OK")); err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-		}).
-		WithRoute("/", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			if _, err := w.Write([]byte("Service running")); err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-		}).
+	logger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+	defer func() {
+		_ = logger.Sync()
+	}()
+
+	router := mux.NewRouter()
+	router.Use(middleware.LoggingMiddleware(logger))
+
+	srv := server.NewServerBuilder(cfg).
+		WithRoute("/health", health.New().ServeHTTP).
+		WithRoute("/", root.New().ServeHTTP).
 		Build()
 
 	serverError := make(chan error, 1)
@@ -49,15 +53,16 @@ func main() {
 
 	select {
 	case <-sigChan:
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		if err := srv.Shutdown(ctx); err != nil {
-			cancel()
-			log.Printf("Server forced to shutdown: %v", err)
-			os.Exit(1)
-		}
-		cancel()
+		handleServerShutdown(srv)
 	case err := <-serverError:
 		log.Printf("Server error: %v", err)
-		os.Exit(1)
+	}
+}
+
+func handleServerShutdown(srv *server.Server) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Printf("Server forced to shutdown: %v", err)
 	}
 }
