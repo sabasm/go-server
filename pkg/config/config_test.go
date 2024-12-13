@@ -9,14 +9,14 @@ func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		name     string
 		envVars  map[string]string
-		expected *Config
+		expected *BaseConfig
 	}{
 		{
 			name:    "default_values",
 			envVars: map[string]string{},
-			expected: &Config{
+			expected: &BaseConfig{
 				AppHost: "localhost",
-				AppPort: "8080",
+				AppPort: 8080,
 				Debug:   false,
 			},
 		},
@@ -27,9 +27,9 @@ func TestLoadConfig(t *testing.T) {
 				"APP_PORT": "3000",
 				"DEBUG":    "true",
 			},
-			expected: &Config{
+			expected: &BaseConfig{
 				AppHost: "0.0.0.0",
-				AppPort: "3000",
+				AppPort: 3000,
 				Debug:   true,
 			},
 		},
@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 				}
 			}()
 
-			got := LoadConfig()
+			got := LoadFromEnv().(*BaseConfig)
 			if got.AppHost != tt.expected.AppHost {
 				t.Errorf("AppHost = %v, want %v", got.AppHost, tt.expected.AppHost)
 			}

@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -25,11 +24,11 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	appConfig := config.LoadConfig()
-	port, _ := strconv.Atoi(appConfig.AppPort)
+	appConfig := config.LoadFromEnv()
+	port := appConfig.GetAppPort()
 
 	cfg := &server.Config{
-		Host:     appConfig.AppHost,
+		Host:     appConfig.GetAppHost(),
 		Port:     port,
 		BasePath: "/",
 		Options: server.Options{

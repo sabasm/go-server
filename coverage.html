@@ -77,7 +77,7 @@
 				
 				<option value="file10">github.com/sabasm/go-server/pkg/api/handlers/root/root.go (80.0%)</option>
 				
-				<option value="file11">github.com/sabasm/go-server/pkg/config/config.go (100.0%)</option>
+				<option value="file11">github.com/sabasm/go-server/pkg/config/config.go (90.9%)</option>
 				
 				<option value="file12">github.com/sabasm/go-server/pkg/middleware/logging.go (100.0%)</option>
 				
@@ -120,7 +120,6 @@ import (
         "net/http"
         "os"
         "os/signal"
-        "strconv"
         "syscall"
         "time"
 
@@ -139,11 +138,11 @@ func healthHandler(w http.ResponseWriter, r *http.Request) <span class="cov8" ti
 }</span>
 
 func main() <span class="cov8" title="1">{
-        appConfig := config.LoadConfig()
-        port, _ := strconv.Atoi(appConfig.AppPort)
+        appConfig := config.LoadFromEnv()
+        port := appConfig.GetAppPort()
 
         cfg := &amp;server.Config{
-                Host:     appConfig.AppHost,
+                Host:     appConfig.GetAppHost(),
                 Port:     port,
                 BasePath: "/",
                 Options: server.Options{
@@ -606,34 +605,107 @@ func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span cl
 		
 		<pre class="file" id="file11" style="display: none">package config
 
-import "os"
+import (
+        "os"
+        "strconv"
+        "sync"
+)
 
-type Config struct {
+type Config interface {
+        GetAppHost() string
+        GetAppPort() int
+        IsDebug() bool
+}
+
+type BaseConfig struct {
         AppHost string
-        AppPort string
+        AppPort int
         Debug   bool
 }
 
-func LoadConfig() *Config <span class="cov4" title="2">{
-        return &amp;Config{
-                AppHost: getEnv("APP_HOST", "localhost"),
-                AppPort: getEnv("APP_PORT", "8080"),
-                Debug:   getEnvAsBool("DEBUG", false),
+func (c *BaseConfig) GetAppHost() string <span class="cov0" title="0">{
+        return c.AppHost
+}</span>
+
+func (c *BaseConfig) GetAppPort() int <span class="cov0" title="0">{
+        return c.AppPort
+}</span>
+
+func (c *BaseConfig) IsDebug() bool <span class="cov0" title="0">{
+        return c.Debug
+}</span>
+
+type ConfigBuilder struct {
+        config *BaseConfig
+        mutex  sync.Mutex
+}
+
+func NewConfigBuilder() *ConfigBuilder <span class="cov3" title="2">{
+        return &amp;ConfigBuilder{
+                config: &amp;BaseConfig{},
         }
 }</span>
 
-func getEnv(key, fallback string) string <span class="cov10" title="6">{
-        if value, exists := os.LookupEnv(key); exists </span><span class="cov6" title="3">{
+func (b *ConfigBuilder) WithAppHost(host string) *ConfigBuilder <span class="cov3" title="2">{
+        b.mutex.Lock()
+        defer b.mutex.Unlock()
+        b.config.AppHost = host
+        return b
+}</span>
+
+func (b *ConfigBuilder) WithAppPort(port int) *ConfigBuilder <span class="cov3" title="2">{
+        b.mutex.Lock()
+        defer b.mutex.Unlock()
+        b.config.AppPort = port
+        return b
+}</span>
+
+func (b *ConfigBuilder) WithDebug(debug bool) *ConfigBuilder <span class="cov3" title="2">{
+        b.mutex.Lock()
+        defer b.mutex.Unlock()
+        b.config.Debug = debug
+        return b
+}</span>
+
+func (b *ConfigBuilder) Build() Config <span class="cov3" title="2">{
+        return b.config
+}</span>
+
+func LoadFromEnv() Config <span class="cov3" title="2">{
+        builder := NewConfigBuilder()
+
+        appHost := getEnv("APP_HOST", "localhost")
+        appPort := getEnvAsInt("APP_PORT", 8080)
+        debug := getEnvAsBool("DEBUG", false)
+
+        return builder.
+                WithAppHost(appHost).
+                WithAppPort(appPort).
+                WithDebug(debug).
+                Build()
+}</span>
+
+func getEnv(key, fallback string) string <span class="cov10" title="11">{
+        if value, exists := os.LookupEnv(key); exists </span><span class="cov8" title="7">{
                 return value
         }</span>
-        <span class="cov6" title="3">return fallback</span>
+        <span class="cov6" title="4">return fallback</span>
 }
 
-func getEnvAsBool(name string, fallback bool) bool <span class="cov9" title="5">{
-        if value, exists := os.LookupEnv(name); exists </span><span class="cov7" title="4">{
-                return value == "true"
+func getEnvAsInt(key string, fallback int) int <span class="cov3" title="2">{
+        valueStr := getEnv(key, "")
+        if value, err := strconv.Atoi(valueStr); err == nil </span><span class="cov1" title="1">{
+                return value
         }</span>
         <span class="cov1" title="1">return fallback</span>
+}
+
+func getEnvAsBool(key string, fallback bool) bool <span class="cov7" title="5">{
+        valueStr := getEnv(key, "")
+        if value, err := strconv.ParseBool(valueStr); err == nil </span><span class="cov5" title="3">{
+                return value
+        }</span>
+        <span class="cov3" title="2">return fallback</span>
 }
 </pre>
 		
