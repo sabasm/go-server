@@ -61,17 +61,17 @@
 				
 				<option value="file2">github.com/sabasm/go-server/copycmd/command.go (75.0%)</option>
 				
-				<option value="file3">github.com/sabasm/go-server/internal/api/api.go (100.0%)</option>
+				<option value="file3">github.com/sabasm/go-server/internal/config/config.go (100.0%)</option>
 				
-				<option value="file4">github.com/sabasm/go-server/internal/api/docs/docs.go (100.0%)</option>
+				<option value="file4">github.com/sabasm/go-server/internal/server/server.go (100.0%)</option>
 				
-				<option value="file5">github.com/sabasm/go-server/internal/api/handlers/responsewriter.go (100.0%)</option>
+				<option value="file5">github.com/sabasm/go-server/main.go (65.0%)</option>
 				
-				<option value="file6">github.com/sabasm/go-server/internal/config/config.go (100.0%)</option>
+				<option value="file6">github.com/sabasm/go-server/pkg/api/api/api.go (100.0%)</option>
 				
-				<option value="file7">github.com/sabasm/go-server/internal/server/server.go (100.0%)</option>
+				<option value="file7">github.com/sabasm/go-server/pkg/api/api/docs/docs.go (100.0%)</option>
 				
-				<option value="file8">github.com/sabasm/go-server/main.go (65.0%)</option>
+				<option value="file8">github.com/sabasm/go-server/pkg/api/api/handlers/responsewriter.go (100.0%)</option>
 				
 				<option value="file9">github.com/sabasm/go-server/pkg/api/handlers/health/health.go (80.0%)</option>
 				
@@ -279,82 +279,7 @@ func CopyFile(source, dest string) error <span class="cov8" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file3" style="display: none">package api
-
-type API struct{}
-
-func NewAPI() *API <span class="cov8" title="1">{
-        return &amp;API{}
-}</span>
-</pre>
-		
-		<pre class="file" id="file4" style="display: none">package docs
-
-type SwaggerInfo struct {
-        Title       string
-        Description string
-        Version     string
-        BasePath    string
-}
-
-func HealthCheck() SwaggerInfo <span class="cov8" title="1">{
-        return SwaggerInfo{
-                Title:       "Health Check Endpoint",
-                Description: "Returns service health status",
-                Version:     "1.0",
-                BasePath:    "/health",
-        }
-}</span>
-
-func ServiceStatus() SwaggerInfo <span class="cov8" title="1">{
-        return SwaggerInfo{
-                Title:       "Service Status Endpoint",
-                Description: "Returns current service operational status",
-                Version:     "1.0",
-                BasePath:    "/",
-        }
-}</span>
-</pre>
-		
-		<pre class="file" id="file5" style="display: none">package handlers
-
-import (
-        "bytes"
-        "net/http"
-)
-
-type BufferedResponseWriter struct {
-        http.ResponseWriter
-        buffer     *bytes.Buffer
-        statusCode int
-}
-
-func NewBufferedResponseWriter(w http.ResponseWriter) *BufferedResponseWriter <span class="cov10" title="2">{
-        return &amp;BufferedResponseWriter{
-                ResponseWriter: w,
-                buffer:         new(bytes.Buffer),
-                statusCode:     http.StatusOK,
-        }
-}</span>
-
-func (b *BufferedResponseWriter) WriteHeader(code int) <span class="cov10" title="2">{
-        b.statusCode = code
-}</span>
-
-func (b *BufferedResponseWriter) Write(data []byte) (int, error) <span class="cov10" title="2">{
-        return b.buffer.Write(data)
-}</span>
-
-func (b *BufferedResponseWriter) Flush() error <span class="cov10" title="2">{
-        if b.statusCode != http.StatusOK </span><span class="cov1" title="1">{
-                b.ResponseWriter.WriteHeader(b.statusCode)
-        }</span>
-        <span class="cov10" title="2">_, err := b.ResponseWriter.Write(b.buffer.Bytes())
-        return err</span>
-}
-</pre>
-		
-		<pre class="file" id="file6" style="display: none">package config
+		<pre class="file" id="file3" style="display: none">package config
 
 import (
         "log"
@@ -427,7 +352,7 @@ func getEnvAsBool(key string, defaultValue bool) bool <span class="cov3" title="
 }
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">// internal/server/server.go
+		<pre class="file" id="file4" style="display: none">// internal/server/server.go
 package server
 
 import (
@@ -496,7 +421,7 @@ func (b *ServerBuilder) Build() *Server <span class="cov10" title="2">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package main
+		<pre class="file" id="file5" style="display: none">package main
 
 import (
         "context"
@@ -548,6 +473,81 @@ func main() <span class="cov8" title="1">{
                 log.Printf("Server error: %v", err)
                 os.Exit(1)</span>
         }
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package api
+
+type API struct{}
+
+func NewAPI() *API <span class="cov8" title="1">{
+        return &amp;API{}
+}</span>
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package docs
+
+type SwaggerInfo struct {
+        Title       string
+        Description string
+        Version     string
+        BasePath    string
+}
+
+func HealthCheck() SwaggerInfo <span class="cov8" title="1">{
+        return SwaggerInfo{
+                Title:       "Health Check Endpoint",
+                Description: "Returns service health status",
+                Version:     "1.0",
+                BasePath:    "/health",
+        }
+}</span>
+
+func ServiceStatus() SwaggerInfo <span class="cov8" title="1">{
+        return SwaggerInfo{
+                Title:       "Service Status Endpoint",
+                Description: "Returns current service operational status",
+                Version:     "1.0",
+                BasePath:    "/",
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package handlers
+
+import (
+        "bytes"
+        "net/http"
+)
+
+type BufferedResponseWriter struct {
+        http.ResponseWriter
+        buffer     *bytes.Buffer
+        statusCode int
+}
+
+func NewBufferedResponseWriter(w http.ResponseWriter) *BufferedResponseWriter <span class="cov10" title="2">{
+        return &amp;BufferedResponseWriter{
+                ResponseWriter: w,
+                buffer:         new(bytes.Buffer),
+                statusCode:     http.StatusOK,
+        }
+}</span>
+
+func (b *BufferedResponseWriter) WriteHeader(code int) <span class="cov10" title="2">{
+        b.statusCode = code
+}</span>
+
+func (b *BufferedResponseWriter) Write(data []byte) (int, error) <span class="cov10" title="2">{
+        return b.buffer.Write(data)
+}</span>
+
+func (b *BufferedResponseWriter) Flush() error <span class="cov10" title="2">{
+        if b.statusCode != http.StatusOK </span><span class="cov1" title="1">{
+                b.ResponseWriter.WriteHeader(b.statusCode)
+        }</span>
+        <span class="cov10" title="2">_, err := b.ResponseWriter.Write(b.buffer.Bytes())
+        return err</span>
 }
 </pre>
 		
