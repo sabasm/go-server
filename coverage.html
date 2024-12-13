@@ -55,9 +55,9 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/sabasm/go-server/cmd/main.go (81.8%)</option>
+				<option value="file0">github.com/sabasm/go-server/cmd/main.go (83.3%)</option>
 				
-				<option value="file1">github.com/sabasm/go-server/cmd/server/main.go (81.8%)</option>
+				<option value="file1">github.com/sabasm/go-server/cmd/server/main.go (83.3%)</option>
 				
 				<option value="file2">github.com/sabasm/go-server/internal/api/core/api.go (100.0%)</option>
 				
@@ -77,15 +77,17 @@
 				
 				<option value="file10">github.com/sabasm/go-server/internal/middleware/logging.go (100.0%)</option>
 				
-				<option value="file11">github.com/sabasm/go-server/internal/server/builder.go (100.0%)</option>
+				<option value="file11">github.com/sabasm/go-server/internal/middleware/recovery.go (100.0%)</option>
 				
-				<option value="file12">github.com/sabasm/go-server/internal/server/config.go (100.0%)</option>
+				<option value="file12">github.com/sabasm/go-server/internal/server/builder.go (50.0%)</option>
 				
-				<option value="file13">github.com/sabasm/go-server/internal/server/server.go (100.0%)</option>
+				<option value="file13">github.com/sabasm/go-server/internal/server/config.go (16.7%)</option>
 				
-				<option value="file14">github.com/sabasm/go-server/internal/utils/json.go (100.0%)</option>
+				<option value="file14">github.com/sabasm/go-server/internal/server/server.go (100.0%)</option>
 				
-				<option value="file15">github.com/sabasm/go-server/main.go (66.7%)</option>
+				<option value="file15">github.com/sabasm/go-server/internal/utils/json.go (100.0%)</option>
+				
+				<option value="file16">github.com/sabasm/go-server/main.go (66.7%)</option>
 				
 				</select>
 			</div>
@@ -119,74 +121,6 @@ import (
         "syscall"
         "time"
 
-        "github.com/sabasm/go-server/internal/config"
-        "github.com/sabasm/go-server/internal/server"
-)
-
-func rootHandler(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
-        w.WriteHeader(http.StatusOK)
-        _, _ = w.Write([]byte("Welcome to My MVP App"))
-}</span>
-
-func healthHandler(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
-        w.WriteHeader(http.StatusOK)
-        _, _ = w.Write([]byte("OK"))
-}</span>
-
-func main() <span class="cov8" title="1">{
-        appConfig := config.LoadFromEnv()
-        port := appConfig.GetAppPort()
-
-        cfg := &amp;server.Config{
-                Host:     appConfig.GetAppHost(),
-                Port:     port,
-                BasePath: "/",
-                Options: server.Options{
-                        ReadTimeout:  15 * time.Second,
-                        WriteTimeout: 15 * time.Second,
-                        IdleTimeout:  60 * time.Second,
-                },
-        }
-
-        log.Printf("Loaded config: %+v", cfg)
-
-        srv := server.NewBuilder(cfg).
-                WithRoute("/", rootHandler).
-                WithRoute("/health", healthHandler).
-                Build()
-
-        go func() </span><span class="cov8" title="1">{
-                if err := srv.Start(); err != nil &amp;&amp; err != http.ErrServerClosed </span><span class="cov0" title="0">{
-                        log.Fatalf("Server error: %v", err)
-                }</span>
-        }()
-
-        <span class="cov8" title="1">stop := make(chan os.Signal, 1)
-        signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-        &lt;-stop
-
-        shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
-        if err := srv.Shutdown(shutdownCtx); err != nil </span><span class="cov0" title="0">{
-                log.Printf("Error shutting down server: %v", err)
-                shutdownCancel()
-                os.Exit(1)
-        }</span>
-        <span class="cov8" title="1">shutdownCancel()
-        log.Println("Server stopped gracefully")</span>
-}
-</pre>
-		
-		<pre class="file" id="file1" style="display: none">package main
-
-import (
-        "context"
-        "log"
-        "net/http"
-        "os"
-        "os/signal"
-        "syscall"
-        "time"
-
         "github.com/gorilla/mux"
         "github.com/sabasm/go-server/internal/api/handlers/health"
         "github.com/sabasm/go-server/internal/api/handlers/root"
@@ -202,9 +136,13 @@ func main() <span class="cov8" title="1">{
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatalf("Failed to initialize logger: %v", err)
         }</span>
-        <span class="cov8" title="1">defer logger.Sync()
+        <span class="cov8" title="1">defer func() </span><span class="cov8" title="1">{
+                if syncErr := logger.Sync(); syncErr != nil </span><span class="cov8" title="1">{
+                        log.Printf("Logger sync error: %v", syncErr)
+                }</span>
+        }()
 
-        router := mux.NewRouter()
+        <span class="cov8" title="1">router := mux.NewRouter()
         router.Use(middleware.LoggingMiddleware(logger))
 
         srvCfg := server.Config{
@@ -249,8 +187,86 @@ func handleServerShutdown(srv server.ServerInterface) <span class="cov8" title="
                 log.Printf("Server forced to shutdown: %v", err)
         }</span>
 }
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">// cmd/server/main.go
+package main
 
+import (
+        "context"
+        "log"
+        "net/http"
+        "os"
+        "os/signal"
+        "syscall"
+        "time"
 
+        "github.com/gorilla/mux"
+        "github.com/sabasm/go-server/internal/api/handlers/health"
+        "github.com/sabasm/go-server/internal/api/handlers/root"
+        "github.com/sabasm/go-server/internal/config"
+        "github.com/sabasm/go-server/internal/middleware"
+        "github.com/sabasm/go-server/internal/server"
+        "go.uber.org/zap"
+)
+
+func main() <span class="cov8" title="1">{
+        appConfig := config.LoadFromEnv()
+        logger, err := zap.NewProduction()
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to initialize logger: %v", err)
+        }</span>
+        <span class="cov8" title="1">defer func() </span><span class="cov8" title="1">{
+                if syncErr := logger.Sync(); syncErr != nil </span><span class="cov8" title="1">{
+                        log.Printf("Logger sync error: %v", syncErr)
+                }</span>
+        }()
+
+        <span class="cov8" title="1">router := mux.NewRouter()
+        router.Use(middleware.LoggingMiddleware(logger))
+
+        srvCfg := server.Config{
+                Host:     appConfig.GetAppHost(),
+                Port:     appConfig.GetAppPort(),
+                BasePath: "/",
+                Options: server.Options{
+                        ReadTimeout:  15 * time.Second,
+                        WriteTimeout: 15 * time.Second,
+                        IdleTimeout:  60 * time.Second,
+                },
+        }
+
+        srv := server.NewBuilder(&amp;srvCfg).
+                WithLogger(logger).
+                WithRoute("/health", health.New().ServeHTTP).
+                WithRoute("/", root.New().ServeHTTP).
+                Build()
+
+        serverError := make(chan error, 1)
+        go func() </span><span class="cov8" title="1">{
+                if err := srv.Start(); err != nil &amp;&amp; err != http.ErrServerClosed </span><span class="cov0" title="0">{
+                        serverError &lt;- err
+                }</span>
+        }()
+
+        <span class="cov8" title="1">sigChan := make(chan os.Signal, 1)
+        signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+        select </span>{
+        case &lt;-sigChan:<span class="cov8" title="1">
+                handleServerShutdown(srv)</span>
+        case err := &lt;-serverError:<span class="cov0" title="0">
+                log.Printf("Server error: %v", err)</span>
+        }
+}
+
+func handleServerShutdown(srv server.ServerInterface) <span class="cov8" title="1">{
+        ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+        defer cancel()
+        if err := srv.Shutdown(ctx); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Server forced to shutdown: %v", err)
+        }</span>
+}
 </pre>
 		
 		<pre class="file" id="file2" style="display: none">package api
@@ -337,7 +353,7 @@ import (
 
 type HealthHandler struct{}
 
-func New() *HealthHandler <span class="cov1" title="1">{
+func New() *HealthHandler <span class="cov8" title="3">{
         return &amp;HealthHandler{}
 }</span>
 
@@ -345,7 +361,7 @@ func (h *HealthHandler) ValidateRequest(r *http.Request) error <span class="cov1
         return nil
 }</span>
 
-func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov10" title="2">{
+func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov10" title="4">{
         w.Header().Set("Content-Type", "application/json")
         response := struct {
                 Status string `json:"status"`
@@ -356,8 +372,6 @@ func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span 
                 http.Error(w, "Internal Server Error", http.StatusInternalServerError)
         }</span>
 }
-
-
 </pre>
 		
 		<pre class="file" id="file6" style="display: none">package root
@@ -406,9 +420,11 @@ func getAvailablePort() (int, error) <span class="cov8" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package config
+		<pre class="file" id="file8" style="display: none">// internal/config/config.go
+package config
 
 import (
+        "fmt"
         "os"
         "strconv"
         "sync"
@@ -418,6 +434,7 @@ type Config interface {
         GetAppHost() string
         GetAppPort() int
         IsDebug() bool
+        Validate() error
 }
 
 type BaseConfig struct {
@@ -437,6 +454,16 @@ func (c *BaseConfig) GetAppPort() int <span class="cov1" title="1">{
 func (c *BaseConfig) IsDebug() bool <span class="cov1" title="1">{
         return c.Debug
 }</span>
+
+func (c *BaseConfig) Validate() error <span class="cov5" title="3">{
+        if c.AppPort &lt;= 0 </span><span class="cov1" title="1">{
+                return fmt.Errorf("expected positive port number")
+        }</span>
+        <span class="cov3" title="2">if c.AppHost == "" </span><span class="cov1" title="1">{
+                return fmt.Errorf("expected non-empty host")
+        }</span>
+        <span class="cov1" title="1">return nil</span>
+}
 
 type ConfigBuilder struct {
         config *BaseConfig
@@ -539,8 +566,6 @@ func CopyFile(source, dest string) error <span class="cov8" title="1">{
 
         <span class="cov8" title="1">return nil</span>
 }
-
-
 </pre>
 		
 		<pre class="file" id="file10" style="display: none">package middleware
@@ -567,7 +592,33 @@ func LoggingMiddleware(logger *zap.Logger) mux.MiddlewareFunc <span class="cov8"
 }
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package server
+		<pre class="file" id="file11" style="display: none">package middleware
+
+import (
+        "net/http"
+
+        "github.com/gorilla/mux"
+        "go.uber.org/zap"
+)
+
+func RecoveryMiddleware(logger *zap.Logger) mux.MiddlewareFunc <span class="cov1" title="1">{
+        return func(next http.Handler) http.Handler </span><span class="cov1" title="1">{
+                return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov10" title="2">{
+                        defer func() </span><span class="cov10" title="2">{
+                                if err := recover(); err != nil </span><span class="cov1" title="1">{
+                                        logger.Error("panic recovered",
+                                                zap.Any("error", err),
+                                                zap.String("url", r.URL.String()))
+                                        http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+                                }</span>
+                        }()
+                        <span class="cov10" title="2">next.ServeHTTP(w, r)</span>
+                })
+        }
+}
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package server
 
 import (
         "net/http"
@@ -588,41 +639,36 @@ type serverBuilder struct {
         }
 }
 
-func NewBuilder(cfg *Config) ServerBuilder <span class="cov10" title="6">{
+func NewBuilder(cfg *Config) *serverBuilder <span class="cov10" title="5">{
         return &amp;serverBuilder{
                 config: cfg,
                 router: mux.NewRouter(),
         }
 }</span>
 
-func (b *serverBuilder) WithRoute(pattern string, handler http.HandlerFunc) ServerBuilder <span class="cov6" title="3">{
+func (b *serverBuilder) WithRoute(pattern string, handler http.HandlerFunc) *serverBuilder <span class="cov10" title="5">{
         b.router.HandleFunc(pattern, handler)
         return b
 }</span>
 
-func (b *serverBuilder) WithMiddleware(middleware mux.MiddlewareFunc) ServerBuilder <span class="cov1" title="1">{
-        b.router.Use(middleware)
-        return b
-}</span>
-
-func (b *serverBuilder) WithLogger(logger *zap.Logger) ServerBuilder <span class="cov1" title="1">{
+func (b *serverBuilder) WithLogger(logger *zap.Logger) *serverBuilder <span class="cov0" title="0">{
         b.logger = logger
         return b
 }</span>
 
-func (b *serverBuilder) WithTimeout(read, write, idle time.Duration) ServerBuilder <span class="cov1" title="1">{
+func (b *serverBuilder) WithTimeout(read, write, idle time.Duration) *serverBuilder <span class="cov0" title="0">{
         b.timeouts.read = read
         b.timeouts.write = write
         b.timeouts.idle = idle
         return b
 }</span>
 
-func (b *serverBuilder) Build() ServerInterface <span class="cov10" title="6">{
-        if b.logger == nil </span><span class="cov9" title="5">{
+func (b *serverBuilder) Build() ServerInterface <span class="cov10" title="5">{
+        if b.logger == nil </span><span class="cov10" title="5">{
                 b.logger, _ = zap.NewProduction()
         }</span>
 
-        <span class="cov10" title="6">return &amp;Server{
+        <span class="cov10" title="5">return &amp;Server{
                 config: b.config,
                 router: b.router,
                 logger: b.logger,
@@ -637,7 +683,7 @@ func (b *serverBuilder) Build() ServerInterface <span class="cov10" title="6">{
 }
 </pre>
 		
-		<pre class="file" id="file12" style="display: none">package server
+		<pre class="file" id="file13" style="display: none">package server
 
 import (
         "fmt"
@@ -657,12 +703,22 @@ type Options struct {
         IdleTimeout  time.Duration
 }
 
-func (c *Config) GetAddress() string <span class="cov10" title="6">{
+func (c *Config) GetAddress() string <span class="cov10" title="5">{
         return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }</span>
+
+func (c *Config) Validate() error <span class="cov0" title="0">{
+        if c.Port &lt;= 0 </span><span class="cov0" title="0">{
+                return fmt.Errorf("expected positive port number")
+        }</span>
+        <span class="cov0" title="0">if c.Host == "" </span><span class="cov0" title="0">{
+                return fmt.Errorf("expected non-empty host")
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
 </pre>
 		
-		<pre class="file" id="file13" style="display: none">package server
+		<pre class="file" id="file14" style="display: none">package server
 
 import (
         "context"
@@ -692,7 +748,7 @@ func (s *Server) Shutdown(ctx context.Context) error <span class="cov10" title="
 }</span>
 </pre>
 		
-		<pre class="file" id="file14" style="display: none">package utils
+		<pre class="file" id="file15" style="display: none">package utils
 
 import (
         "encoding/json"
@@ -706,7 +762,7 @@ func WriteJSONResponse(w http.ResponseWriter, status int, payload interface{}) e
 }</span>
 </pre>
 		
-		<pre class="file" id="file15" style="display: none">package main
+		<pre class="file" id="file16" style="display: none">package main
 
 import (
         "context"

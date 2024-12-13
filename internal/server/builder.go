@@ -19,29 +19,24 @@ type serverBuilder struct {
 	}
 }
 
-func NewBuilder(cfg *Config) ServerBuilder {
+func NewBuilder(cfg *Config) *serverBuilder {
 	return &serverBuilder{
 		config: cfg,
 		router: mux.NewRouter(),
 	}
 }
 
-func (b *serverBuilder) WithRoute(pattern string, handler http.HandlerFunc) ServerBuilder {
+func (b *serverBuilder) WithRoute(pattern string, handler http.HandlerFunc) *serverBuilder {
 	b.router.HandleFunc(pattern, handler)
 	return b
 }
 
-func (b *serverBuilder) WithMiddleware(middleware mux.MiddlewareFunc) ServerBuilder {
-	b.router.Use(middleware)
-	return b
-}
-
-func (b *serverBuilder) WithLogger(logger *zap.Logger) ServerBuilder {
+func (b *serverBuilder) WithLogger(logger *zap.Logger) *serverBuilder {
 	b.logger = logger
 	return b
 }
 
-func (b *serverBuilder) WithTimeout(read, write, idle time.Duration) ServerBuilder {
+func (b *serverBuilder) WithTimeout(read, write, idle time.Duration) *serverBuilder {
 	b.timeouts.read = read
 	b.timeouts.write = write
 	b.timeouts.idle = idle

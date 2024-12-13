@@ -9,27 +9,33 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gorilla/mux"
+	"github.com/sabasm/go-server/internal/api/handlers/health"
+	"github.com/sabasm/go-server/internal/api/handlers/root"
 	"github.com/sabasm/go-server/internal/config"
+	"github.com/sabasm/go-server/internal/middleware"
 	"github.com/sabasm/go-server/internal/server"
+	"go.uber.org/zap"
 )
-
-func rootHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte("Welcome to My MVP App"))
-}
-
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte("OK"))
-}
 
 func main() {
 	appConfig := config.LoadFromEnv()
-	port := appConfig.GetAppPort()
+	logger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+	defer func() {
+		if syncErr := logger.Sync(); syncErr != nil {
+			log.Printf("Logger sync error: %v", syncErr)
+		}
+	}()
 
-	cfg := &server.Config{
+	router := mux.NewRouter()
+	router.Use(middleware.LoggingMiddleware(logger))
+
+	srvCfg := server.Config{
 		Host:     appConfig.GetAppHost(),
-		Port:     port,
+		Port:     appConfig.GetAppPort(),
 		BasePath: "/",
 		Options: server.Options{
 			ReadTimeout:  15 * time.Second,
@@ -38,29 +44,34 @@ func main() {
 		},
 	}
 
-	log.Printf("Loaded config: %+v", cfg)
-
-	srv := server.NewBuilder(cfg).
-		WithRoute("/", rootHandler).
-		WithRoute("/health", healthHandler).
+	srv := server.NewBuilder(&srvCfg).
+		WithLogger(logger).
+		WithRoute("/health", health.New().ServeHTTP).
+		WithRoute("/", root.New().ServeHTTP).
 		Build()
 
+	serverError := make(chan error, 1)
 	go func() {
 		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server error: %v", err)
+			serverError <- err
 		}
 	}()
 
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-	<-stop
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
-	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Printf("Error shutting down server: %v", err)
-		shutdownCancel()
-		os.Exit(1)
+	select {
+	case <-sigChan:
+		handleServerShutdown(srv)
+	case err := <-serverError:
+		log.Printf("Server error: %v", err)
 	}
-	shutdownCancel()
-	log.Println("Server stopped gracefully")
+}
+
+func handleServerShutdown(srv server.ServerInterface) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Printf("Server forced to shutdown: %v", err)
+	}
 }

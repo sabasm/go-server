@@ -1,6 +1,8 @@
+// internal/config/config.go
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"sync"
@@ -10,6 +12,7 @@ type Config interface {
 	GetAppHost() string
 	GetAppPort() int
 	IsDebug() bool
+	Validate() error
 }
 
 type BaseConfig struct {
@@ -28,6 +31,16 @@ func (c *BaseConfig) GetAppPort() int {
 
 func (c *BaseConfig) IsDebug() bool {
 	return c.Debug
+}
+
+func (c *BaseConfig) Validate() error {
+	if c.AppPort <= 0 {
+		return fmt.Errorf("expected positive port number")
+	}
+	if c.AppHost == "" {
+		return fmt.Errorf("expected non-empty host")
+	}
+	return nil
 }
 
 type ConfigBuilder struct {

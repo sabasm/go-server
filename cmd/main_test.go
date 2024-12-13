@@ -1,3 +1,4 @@
+// cmd/main_test.go
 package main
 
 import (
@@ -11,6 +12,16 @@ import (
 	"testing"
 	"time"
 )
+
+func rootHandler(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("Welcome to My MVP App"))
+}
+
+func healthHandler(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("OK"))
+}
 
 func TestRootHandler(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -44,23 +55,15 @@ func TestHealthHandler(t *testing.T) {
 	}
 }
 
-// Helper function to get a free port
 func getFreePort() (int, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		return 0, err
-	}
-
-	l, err := net.ListenTCP("tcp", addr)
+	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		return 0, err
 	}
 	defer l.Close()
-
 	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
-// TestMainServerLifecycle verifies server startup and graceful shutdown
 func TestMainServerLifecycle(t *testing.T) {
 	port, err := getFreePort()
 	if err != nil {
@@ -78,7 +81,6 @@ func TestMainServerLifecycle(t *testing.T) {
 		{
 			name: "Graceful Shutdown",
 			setupFunc: func() error {
-				// Simulate normal server lifecycle
 				return nil
 			},
 			expectShutdown: true,
@@ -86,7 +88,6 @@ func TestMainServerLifecycle(t *testing.T) {
 		{
 			name: "Server Startup with Error",
 			setupFunc: func() error {
-				// Simulate a potential server startup error
 				return fmt.Errorf("simulated startup error")
 			},
 			expectShutdown: false,
@@ -104,24 +105,19 @@ func TestMainServerLifecycle(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				defer close(done)
-
-				// Introduce a mechanism to simulate potential startup conditions
 				if err := tc.setupFunc(); err != nil {
 					errorCh <- err
 					return
 				}
-
 				main()
 			}()
 
-			// Trigger graceful shutdown
 			go func() {
 				time.Sleep(100 * time.Millisecond)
 				p, _ := os.FindProcess(os.Getpid())
 				_ = p.Signal(os.Interrupt)
 			}()
 
-			// Set up timeout context
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 
@@ -129,7 +125,6 @@ func TestMainServerLifecycle(t *testing.T) {
 			case <-ctx.Done():
 				t.Error("Test timed out")
 			case <-done:
-				// Successful completion
 			case err := <-errorCh:
 				if tc.expectShutdown {
 					t.Errorf("Unexpected error: %v", err)

@@ -1,3 +1,4 @@
+// internal/config/config_test.go
 package config
 
 import (
@@ -167,5 +168,54 @@ func TestIsDebug(t *testing.T) {
 	config := &BaseConfig{Debug: true}
 	if !config.IsDebug() {
 		t.Errorf("Expected IsDebug to be true, got false")
+	}
+}
+
+func TestConfigValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  *BaseConfig
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "valid config",
+			config: &BaseConfig{
+				AppHost: "localhost",
+				AppPort: 8080,
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid_port",
+			config: &BaseConfig{
+				AppHost: "localhost",
+				AppPort: 0,
+			},
+			wantErr: true,
+			errMsg:  "expected positive port number",
+		},
+		{
+			name: "invalid_host",
+			config: &BaseConfig{
+				AppHost: "",
+				AppPort: 8080,
+			},
+			wantErr: true,
+			errMsg:  "expected non-empty host",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err != nil && err.Error() != tt.errMsg {
+				t.Errorf("Validate() error = %v, want %v", err.Error(), tt.errMsg)
+			}
+		})
 	}
 }
