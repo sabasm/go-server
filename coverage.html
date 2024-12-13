@@ -65,37 +65,31 @@
 				
 				<option value="file4">github.com/sabasm/go-server/internal/api/docs/docs.go (100.0%)</option>
 				
-				<option value="file5">github.com/sabasm/go-server/internal/api/handlers/health/health.go (77.8%)</option>
+				<option value="file5">github.com/sabasm/go-server/internal/api/handlers/responsewriter.go (100.0%)</option>
 				
-				<option value="file6">github.com/sabasm/go-server/internal/api/handlers/responsewriter.go (100.0%)</option>
+				<option value="file6">github.com/sabasm/go-server/internal/config/config.go (100.0%)</option>
 				
-				<option value="file7">github.com/sabasm/go-server/internal/api/handlers/root/root.go (77.8%)</option>
+				<option value="file7">github.com/sabasm/go-server/internal/server/server.go (100.0%)</option>
 				
-				<option value="file8">github.com/sabasm/go-server/internal/config/config.go (100.0%)</option>
+				<option value="file8">github.com/sabasm/go-server/main.go (65.0%)</option>
 				
-				<option value="file9">github.com/sabasm/go-server/internal/server/server.go (100.0%)</option>
+				<option value="file9">github.com/sabasm/go-server/pkg/api/handlers/health/health.go (80.0%)</option>
 				
-				<option value="file10">github.com/sabasm/go-server/main.go (65.0%)</option>
+				<option value="file10">github.com/sabasm/go-server/pkg/api/handlers/root/root.go (80.0%)</option>
 				
-				<option value="file11">github.com/sabasm/go-server/pkg/api/handlers/health.go (66.7%)</option>
+				<option value="file11">github.com/sabasm/go-server/pkg/config/config.go (100.0%)</option>
 				
-				<option value="file12">github.com/sabasm/go-server/pkg/api/handlers/health/health.go (100.0%)</option>
+				<option value="file12">github.com/sabasm/go-server/pkg/middleware/logging.go (100.0%)</option>
 				
-				<option value="file13">github.com/sabasm/go-server/pkg/api/handlers/root.go (66.7%)</option>
+				<option value="file13">github.com/sabasm/go-server/pkg/server/builder.go (100.0%)</option>
 				
-				<option value="file14">github.com/sabasm/go-server/pkg/api/handlers/root/root.go (100.0%)</option>
+				<option value="file14">github.com/sabasm/go-server/pkg/server/config.go (100.0%)</option>
 				
-				<option value="file15">github.com/sabasm/go-server/pkg/config/config.go (100.0%)</option>
+				<option value="file15">github.com/sabasm/go-server/pkg/server/server.go (100.0%)</option>
 				
-				<option value="file16">github.com/sabasm/go-server/pkg/middleware/logging.go (100.0%)</option>
+				<option value="file16">github.com/sabasm/go-server/pkg/utils/json.go (100.0%)</option>
 				
-				<option value="file17">github.com/sabasm/go-server/pkg/server/builder.go (100.0%)</option>
-				
-				<option value="file18">github.com/sabasm/go-server/pkg/server/config.go (100.0%)</option>
-				
-				<option value="file19">github.com/sabasm/go-server/pkg/server/server.go (100.0%)</option>
-				
-				<option value="file20">github.com/sabasm/go-server/test/integration/utils.go (75.0%)</option>
+				<option value="file17">github.com/sabasm/go-server/test/integration/utils.go (75.0%)</option>
 				
 				</select>
 			</div>
@@ -323,35 +317,7 @@ func ServiceStatus() SwaggerInfo <span class="cov8" title="1">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">package health
-
-import (
-        "net/http"
-
-        "github.com/sabasm/go-server/internal/api/handlers"
-)
-
-type HealthHandler struct{}
-
-func New() *HealthHandler <span class="cov10" title="2">{
-        return &amp;HealthHandler{}
-}</span>
-
-func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov10" title="2">{
-        bw := handlers.NewBufferedResponseWriter(w)
-        _, err := bw.Write([]byte("OK"))
-        if err != nil </span><span class="cov0" title="0">{
-                http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-                return
-        }</span>
-        <span class="cov10" title="2">bw.WriteHeader(http.StatusOK)
-        if err := bw.Flush(); err != nil </span><span class="cov1" title="1">{
-                http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        }</span>
-}
-</pre>
-		
-		<pre class="file" id="file6" style="display: none">package handlers
+		<pre class="file" id="file5" style="display: none">package handlers
 
 import (
         "bytes"
@@ -389,35 +355,7 @@ func (b *BufferedResponseWriter) Flush() error <span class="cov10" title="2">{
 }
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package root
-
-import (
-        "net/http"
-
-        "github.com/sabasm/go-server/internal/api/handlers"
-)
-
-type RootHandler struct{}
-
-func New() *RootHandler <span class="cov10" title="2">{
-        return &amp;RootHandler{}
-}</span>
-
-func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov10" title="2">{
-        bw := handlers.NewBufferedResponseWriter(w)
-        _, err := bw.Write([]byte("Service running"))
-        if err != nil </span><span class="cov0" title="0">{
-                http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-                return
-        }</span>
-        <span class="cov10" title="2">bw.WriteHeader(http.StatusOK)
-        if err := bw.Flush(); err != nil </span><span class="cov1" title="1">{
-                http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        }</span>
-}
-</pre>
-		
-		<pre class="file" id="file8" style="display: none">package config
+		<pre class="file" id="file6" style="display: none">package config
 
 import (
         "log"
@@ -490,7 +428,7 @@ func getEnvAsBool(key string, defaultValue bool) bool <span class="cov3" title="
 }
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">// internal/server/server.go
+		<pre class="file" id="file7" style="display: none">// internal/server/server.go
 package server
 
 import (
@@ -559,7 +497,7 @@ func (b *ServerBuilder) Build() *Server <span class="cov10" title="2">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package main
+		<pre class="file" id="file8" style="display: none">package main
 
 import (
         "context"
@@ -570,10 +508,10 @@ import (
         "syscall"
         "time"
 
-        "github.com/sabasm/go-server/internal/api/handlers/health"
-        "github.com/sabasm/go-server/internal/api/handlers/root"
         "github.com/sabasm/go-server/internal/config"
         "github.com/sabasm/go-server/internal/server"
+        "github.com/sabasm/go-server/pkg/api/handlers/health"
+        "github.com/sabasm/go-server/pkg/api/handlers/root"
 )
 
 func main() <span class="cov8" title="1">{
@@ -614,33 +552,11 @@ func main() <span class="cov8" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package handlers
+		<pre class="file" id="file9" style="display: none">package health
 
 import (
+        "encoding/json"
         "net/http"
-
-        "github.com/sabasm/go-server/pkg/utils"
-)
-
-type HealthHandler struct{}
-
-func NewHealthHandler() *HealthHandler <span class="cov8" title="1">{
-        return &amp;HealthHandler{}
-}</span>
-
-func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
-        if err := utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"status": "OK"}); err != nil </span><span class="cov0" title="0">{
-                http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        }</span>
-}
-</pre>
-		
-		<pre class="file" id="file12" style="display: none">package health
-
-import (
-        "net/http"
-
-        "github.com/sabasm/go-server/pkg/utils"
 )
 
 type HealthResponse struct {
@@ -649,45 +565,24 @@ type HealthResponse struct {
 
 type HealthHandler struct{}
 
-func New() *HealthHandler <span class="cov10" title="2">{
+func New() *HealthHandler <span class="cov8" title="1">{
         return &amp;HealthHandler{}
 }</span>
 
-func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov10" title="2">{
+func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
         response := HealthResponse{Status: "OK"}
-        if err := utils.WriteJSONResponse(w, http.StatusOK, response); err != nil </span><span class="cov1" title="1">{
+        w.Header().Set("Content-Type", "application/json")
+        if err := json.NewEncoder(w).Encode(response); err != nil </span><span class="cov0" title="0">{
                 http.Error(w, "Internal Server Error", http.StatusInternalServerError)
         }</span>
 }
 </pre>
 		
-		<pre class="file" id="file13" style="display: none">package handlers
+		<pre class="file" id="file10" style="display: none">package root
 
 import (
+        "encoding/json"
         "net/http"
-
-        "github.com/sabasm/go-server/pkg/utils"
-)
-
-type RootHandler struct{}
-
-func NewRootHandler() *RootHandler <span class="cov8" title="1">{
-        return &amp;RootHandler{}
-}</span>
-
-func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
-        if err := utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Welcome to Go Server"}); err != nil </span><span class="cov0" title="0">{
-                http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        }</span>
-}
-</pre>
-		
-		<pre class="file" id="file14" style="display: none">package root
-
-import (
-        "net/http"
-
-        "github.com/sabasm/go-server/pkg/utils"
 )
 
 type RootResponse struct {
@@ -696,19 +591,20 @@ type RootResponse struct {
 
 type RootHandler struct{}
 
-func New() *RootHandler <span class="cov10" title="2">{
+func New() *RootHandler <span class="cov8" title="1">{
         return &amp;RootHandler{}
 }</span>
 
-func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov10" title="2">{
+func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
         response := RootResponse{Message: "Welcome to Go Server"}
-        if err := utils.WriteJSONResponse(w, http.StatusOK, response); err != nil </span><span class="cov1" title="1">{
+        w.Header().Set("Content-Type", "application/json")
+        if err := json.NewEncoder(w).Encode(response); err != nil </span><span class="cov0" title="0">{
                 http.Error(w, "Internal Server Error", http.StatusInternalServerError)
         }</span>
 }
 </pre>
 		
-		<pre class="file" id="file15" style="display: none">package config
+		<pre class="file" id="file11" style="display: none">package config
 
 import "os"
 
@@ -741,7 +637,7 @@ func getEnvAsBool(name string, fallback bool) bool <span class="cov9" title="5">
 }
 </pre>
 		
-		<pre class="file" id="file16" style="display: none">package middleware
+		<pre class="file" id="file12" style="display: none">package middleware
 
 import (
         "net/http"
@@ -765,7 +661,7 @@ func LoggingMiddleware(logger *zap.Logger) mux.MiddlewareFunc <span class="cov8"
 }
 </pre>
 		
-		<pre class="file" id="file17" style="display: none">package server
+		<pre class="file" id="file13" style="display: none">package server
 
 import (
         "net/http"
@@ -835,7 +731,7 @@ func (b *serverBuilder) Build() ServerInterface <span class="cov10" title="6">{
 }
 </pre>
 		
-		<pre class="file" id="file18" style="display: none">package server
+		<pre class="file" id="file14" style="display: none">package server
 
 import (
         "fmt"
@@ -860,7 +756,7 @@ func (c *Config) GetAddress() string <span class="cov10" title="6">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file19" style="display: none">package server
+		<pre class="file" id="file15" style="display: none">package server
 
 import (
         "context"
@@ -890,7 +786,21 @@ func (s *Server) Shutdown(ctx context.Context) error <span class="cov10" title="
 }</span>
 </pre>
 		
-		<pre class="file" id="file20" style="display: none">package integration
+		<pre class="file" id="file16" style="display: none">package utils
+
+import (
+        "encoding/json"
+        "net/http"
+)
+
+func WriteJSONResponse(w http.ResponseWriter, status int, payload interface{}) error <span class="cov10" title="2">{
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(status)
+        return json.NewEncoder(w).Encode(payload)
+}</span>
+</pre>
+		
+		<pre class="file" id="file17" style="display: none">package integration
 
 import "net"
 
