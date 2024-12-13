@@ -9,10 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/sabasm/go-server/internal/api/handlers/health"
-	"github.com/sabasm/go-server/internal/api/handlers/root"
 	"github.com/sabasm/go-server/internal/config"
 	"github.com/sabasm/go-server/internal/server"
+	"github.com/sabasm/go-server/pkg/api/handlers/health"
+	"github.com/sabasm/go-server/pkg/api/handlers/root"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-// internal/api/handlers/responsewriter_test.go
+// pkg/api/handlers/responsewriter_test.go
 package handlers
 
 import (
