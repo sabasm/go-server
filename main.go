@@ -9,20 +9,27 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sabasm/go-server/internal/api/handlers/health"
+	"github.com/sabasm/go-server/internal/api/handlers/root"
 	"github.com/sabasm/go-server/internal/config"
 	"github.com/sabasm/go-server/internal/server"
-	"github.com/sabasm/go-server/pkg/api/handlers/health"
-	"github.com/sabasm/go-server/pkg/api/handlers/root"
 )
 
 func main() {
-	configLoader := config.NewConfigLoader()
-	appConfig, err := configLoader.LoadConfig()
-	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+	appConfig := config.LoadFromEnv()
+
+	cfg := &server.Config{
+		Host:     appConfig.GetAppHost(),
+		Port:     appConfig.GetAppPort(),
+		BasePath: "/",
+		Options: server.Options{
+			ReadTimeout:  15 * time.Second,
+			WriteTimeout: 15 * time.Second,
+			IdleTimeout:  60 * time.Second,
+		},
 	}
 
-	srv := server.NewServerBuilder(appConfig).
+	srv := server.NewBuilder(cfg).
 		WithRoute("/health", health.New().ServeHTTP).
 		WithRoute("/", root.New().ServeHTTP).
 		Build()

@@ -1,67 +1,28 @@
-// internal/server/server.go
 package server
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/sabasm/go-server/internal/config"
 	"go.uber.org/zap"
 )
 
 type Server struct {
-	Config *config.AppConfig
-	Router *mux.Router
-	Logger *zap.Logger
+	config *Config
+	router *mux.Router
+	logger *zap.Logger
 	srv    *http.Server
 }
 
 func (s *Server) Start() error {
-	s.Logger.Info("Starting server", zap.String("addr", s.srv.Addr))
+	s.logger.Info("starting server",
+		zap.String("addr", s.srv.Addr),
+		zap.String("base_path", s.config.BasePath))
 	return s.srv.ListenAndServe()
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
-	s.Logger.Info("Server shutting down")
+	s.logger.Info("shutting down server")
 	return s.srv.Shutdown(ctx)
-}
-
-type ServerBuilder struct {
-	Config *config.AppConfig
-	Router *mux.Router
-	Logger *zap.Logger
-}
-
-func NewServerBuilder(cfg *config.AppConfig) *ServerBuilder {
-	logger, _ := zap.NewProduction()
-	return &ServerBuilder{
-		Config: cfg,
-		Router: mux.NewRouter(),
-		Logger: logger,
-	}
-}
-
-func (b *ServerBuilder) WithRoute(pattern string, handler http.HandlerFunc) *ServerBuilder {
-	b.Router.HandleFunc(pattern, handler)
-	return b
-}
-
-func (b *ServerBuilder) Build() *Server {
-	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", b.Config.Port),
-		Handler:      b.Router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
-	}
-
-	return &Server{
-		Config: b.Config,
-		Router: b.Router,
-		Logger: b.Logger,
-		srv:    srv,
-	}
 }

@@ -9,47 +9,34 @@ func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		name     string
 		envVars  map[string]string
-		expected *AppConfig
+		expected *BaseConfig
 	}{
 		{
 			name:    "default_values",
 			envVars: map[string]string{},
-			expected: &AppConfig{
-				Environment:   "development",
-				Port:          8080,
-				BaseURL:       "http://localhost:8080",
-				RetryCount:    3,
-				RetryDelay:    1000,
-				Monitoring:    false,
-				MetricsPrefix: "app",
+			expected: &BaseConfig{
+				AppHost: "localhost",
+				AppPort: 8080,
+				Debug:   false,
 			},
 		},
 		{
 			name: "custom_values",
 			envVars: map[string]string{
-				"APP_ENV":            "production",
-				"APP_PORT":           "9090",
-				"BASE_URL":           "https://api.example.com",
-				"RETRY_COUNT":        "5",
-				"RETRY_DELAY":        "2000",
-				"MONITORING_ENABLED": "true",
-				"METRICS_PREFIX":     "prod",
+				"APP_HOST": "0.0.0.0",
+				"APP_PORT": "3000",
+				"DEBUG":    "true",
 			},
-			expected: &AppConfig{
-				Environment:   "production",
-				Port:          9090,
-				BaseURL:       "https://api.example.com",
-				RetryCount:    5,
-				RetryDelay:    2000,
-				Monitoring:    true,
-				MetricsPrefix: "prod",
+			expected: &BaseConfig{
+				AppHost: "0.0.0.0",
+				AppPort: 3000,
+				Debug:   true,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Setup
 			for k, v := range tt.envVars {
 				os.Setenv(k, v)
 			}
@@ -59,36 +46,15 @@ func TestLoadConfig(t *testing.T) {
 				}
 			}()
 
-			// Test
-			loader := NewConfigLoader()
-			config, err := loader.LoadConfig()
-
-			// Verify
-			if err != nil {
-				t.Errorf("LoadConfig() error = %v", err)
-				return
+			got := LoadFromEnv().(*BaseConfig)
+			if got.AppHost != tt.expected.AppHost {
+				t.Errorf("AppHost = %v, want %v", got.AppHost, tt.expected.AppHost)
 			}
-
-			if config.Environment != tt.expected.Environment {
-				t.Errorf("Environment = %v, want %v", config.Environment, tt.expected.Environment)
+			if got.AppPort != tt.expected.AppPort {
+				t.Errorf("AppPort = %v, want %v", got.AppPort, tt.expected.AppPort)
 			}
-			if config.Port != tt.expected.Port {
-				t.Errorf("Port = %v, want %v", config.Port, tt.expected.Port)
-			}
-			if config.BaseURL != tt.expected.BaseURL {
-				t.Errorf("BaseURL = %v, want %v", config.BaseURL, tt.expected.BaseURL)
-			}
-			if config.RetryCount != tt.expected.RetryCount {
-				t.Errorf("RetryCount = %v, want %v", config.RetryCount, tt.expected.RetryCount)
-			}
-			if config.RetryDelay != tt.expected.RetryDelay {
-				t.Errorf("RetryDelay = %v, want %v", config.RetryDelay, tt.expected.RetryDelay)
-			}
-			if config.Monitoring != tt.expected.Monitoring {
-				t.Errorf("Monitoring = %v, want %v", config.Monitoring, tt.expected.Monitoring)
-			}
-			if config.MetricsPrefix != tt.expected.MetricsPrefix {
-				t.Errorf("MetricsPrefix = %v, want %v", config.MetricsPrefix, tt.expected.MetricsPrefix)
+			if got.Debug != tt.expected.Debug {
+				t.Errorf("Debug = %v, want %v", got.Debug, tt.expected.Debug)
 			}
 		})
 	}
@@ -96,51 +62,110 @@ func TestLoadConfig(t *testing.T) {
 
 func TestGetEnv(t *testing.T) {
 	tests := []struct {
-		name       string
-		key        string
-		envValue   string
-		setEnv     bool
-		defaultVal string
-		expected   string
+		name     string
+		key      string
+		value    string
+		fallback string
+		setEnv   bool
+		want     string
 	}{
 		{
-			name:       "existing_env_var",
-			key:        "TEST_KEY",
-			envValue:   "test_value",
-			setEnv:     true,
-			defaultVal: "default",
-			expected:   "test_value",
+			name:     "exists",
+			key:      "TEST_KEY",
+			value:    "test_value",
+			fallback: "default",
+			setEnv:   true,
+			want:     "test_value",
 		},
 		{
-			name:       "missing_env_var",
-			key:        "TEST_KEY",
-			setEnv:     false,
-			defaultVal: "default",
-			expected:   "default",
-		},
-		{
-			name:       "empty_env_var",
-			key:        "TEST_KEY",
-			envValue:   "",
-			setEnv:     true,
-			defaultVal: "default",
-			expected:   "",
+			name:     "not_exists",
+			key:      "TEST_KEY",
+			fallback: "default",
+			setEnv:   false,
+			want:     "default",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.setEnv {
-				os.Setenv(tt.key, tt.envValue)
+				os.Setenv(tt.key, tt.value)
 				defer os.Unsetenv(tt.key)
-			} else {
-				os.Unsetenv(tt.key)
 			}
 
-			result := getEnv(tt.key, tt.defaultVal)
-			if result != tt.expected {
-				t.Errorf("getEnv() = %v, want %v", result, tt.expected)
+			if got := getEnv(tt.key, tt.fallback); got != tt.want {
+				t.Errorf("getEnv() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestGetEnvAsBool(t *testing.T) {
+	tests := []struct {
+		name     string
+		key      string
+		value    string
+		fallback bool
+		setEnv   bool
+		want     bool
+	}{
+		{
+			name:     "true_value",
+			key:      "TEST_BOOL",
+			value:    "true",
+			fallback: false,
+			setEnv:   true,
+			want:     true,
+		},
+		{
+			name:     "false_value",
+			key:      "TEST_BOOL",
+			value:    "false",
+			fallback: true,
+			setEnv:   true,
+			want:     false,
+		},
+		{
+			name:     "invalid_value",
+			key:      "TEST_BOOL",
+			value:    "invalid",
+			fallback: false,
+			setEnv:   true,
+			want:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.setEnv {
+				os.Setenv(tt.key, tt.value)
+				defer os.Unsetenv(tt.key)
+			}
+
+			if got := getEnvAsBool(tt.key, tt.fallback); got != tt.want {
+				t.Errorf("getEnvAsBool() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetAppHost(t *testing.T) {
+	config := &BaseConfig{AppHost: "test_host"}
+	if config.GetAppHost() != "test_host" {
+		t.Errorf("Expected AppHost to be 'test_host', got '%v'", config.GetAppHost())
+	}
+}
+
+func TestGetAppPort(t *testing.T) {
+	config := &BaseConfig{AppPort: 1234}
+	if config.GetAppPort() != 1234 {
+		t.Errorf("Expected AppPort to be 1234, got %v", config.GetAppPort())
+	}
+}
+
+func TestIsDebug(t *testing.T) {
+	config := &BaseConfig{Debug: true}
+	if !config.IsDebug() {
+		t.Errorf("Expected IsDebug to be true, got false")
 	}
 }

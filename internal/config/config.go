@@ -1,71 +1,104 @@
 package config
 
 import (
-	"log"
 	"os"
 	"strconv"
-
-	"github.com/joho/godotenv"
+	"sync"
 )
 
-type AppConfig struct {
-	Environment   string
-	Port          int
-	BaseURL       string
-	RetryCount    int
-	RetryDelay    int
-	Monitoring    bool
-	MetricsPrefix string
+type Config interface {
+	GetAppHost() string
+	GetAppPort() int
+	IsDebug() bool
 }
 
-type ConfigLoader interface {
-	LoadConfig() (*AppConfig, error)
+type BaseConfig struct {
+	AppHost string
+	AppPort int
+	Debug   bool
 }
 
-type configLoader struct{}
-
-func NewConfigLoader() ConfigLoader {
-	return &configLoader{}
+func (c *BaseConfig) GetAppHost() string {
+	return c.AppHost
 }
 
-func (c *configLoader) LoadConfig() (*AppConfig, error) {
-	if err := godotenv.Load(".env"); err != nil {
-		log.Println("No .env file found, using default environment variables")
+func (c *BaseConfig) GetAppPort() int {
+	return c.AppPort
+}
+
+func (c *BaseConfig) IsDebug() bool {
+	return c.Debug
+}
+
+type ConfigBuilder struct {
+	config *BaseConfig
+	mutex  sync.Mutex
+}
+
+func NewConfigBuilder() *ConfigBuilder {
+	return &ConfigBuilder{
+		config: &BaseConfig{},
 	}
-
-	config := &AppConfig{
-		Environment:   getEnv("APP_ENV", "development"),
-		Port:          getEnvAsInt("APP_PORT", 8080),
-		BaseURL:       getEnv("BASE_URL", "http://localhost:8080"),
-		RetryCount:    getEnvAsInt("RETRY_COUNT", 3),
-		RetryDelay:    getEnvAsInt("RETRY_DELAY", 1000),
-		Monitoring:    getEnvAsBool("MONITORING_ENABLED", false),
-		MetricsPrefix: getEnv("METRICS_PREFIX", "app"),
-	}
-
-	return config, nil
 }
 
-func getEnv(key, defaultValue string) string {
-	value, exists := os.LookupEnv(key)
-	if exists {
+func (b *ConfigBuilder) WithAppHost(host string) *ConfigBuilder {
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+	b.config.AppHost = host
+	return b
+}
+
+func (b *ConfigBuilder) WithAppPort(port int) *ConfigBuilder {
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+	b.config.AppPort = port
+	return b
+}
+
+func (b *ConfigBuilder) WithDebug(debug bool) *ConfigBuilder {
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+	b.config.Debug = debug
+	return b
+}
+
+func (b *ConfigBuilder) Build() Config {
+	return b.config
+}
+
+func LoadFromEnv() Config {
+	builder := NewConfigBuilder()
+
+	appHost := getEnv("APP_HOST", "localhost")
+	appPort := getEnvAsInt("APP_PORT", 8080)
+	debug := getEnvAsBool("DEBUG", false)
+
+	return builder.
+		WithAppHost(appHost).
+		WithAppPort(appPort).
+		WithDebug(debug).
+		Build()
+}
+
+func getEnv(key, fallback string) string {
+	if value, exists := os.LookupEnv(key); exists {
 		return value
 	}
-	return defaultValue
+	return fallback
 }
 
-func getEnvAsInt(key string, defaultValue int) int {
+func getEnvAsInt(key string, fallback int) int {
 	valueStr := getEnv(key, "")
 	if value, err := strconv.Atoi(valueStr); err == nil {
 		return value
 	}
-	return defaultValue
+	return fallback
 }
 
-func getEnvAsBool(key string, defaultValue bool) bool {
+func getEnvAsBool(key string, fallback bool) bool {
 	valueStr := getEnv(key, "")
 	if value, err := strconv.ParseBool(valueStr); err == nil {
 		return value
 	}
-	return defaultValue
+	return fallback
 }

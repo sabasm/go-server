@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/sabasm/go-server/pkg/config"
-	"github.com/sabasm/go-server/pkg/server"
+	"github.com/sabasm/go-server/internal/config"
+	"github.com/sabasm/go-server/internal/server"
 )
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
