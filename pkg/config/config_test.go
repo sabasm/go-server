@@ -148,3 +148,24 @@ func TestGetEnvAsBool(t *testing.T) {
 		})
 	}
 }
+
+func TestGetAppHost(t *testing.T) {
+	config := &BaseConfig{AppHost: "test_host"}
+	if config.GetAppHost() != "test_host" {
+		t.Errorf("Expected AppHost to be 'test_host', got '%v'", config.GetAppHost())
+	}
+}
+
+func TestGetAppPort(t *testing.T) {
+	config := &BaseConfig{AppPort: 1234}
+	if config.GetAppPort() != 1234 {
+		t.Errorf("Expected AppPort to be 1234, got %v", config.GetAppPort())
+	}
+}
+
+func TestIsDebug(t *testing.T) {
+	config := &BaseConfig{Debug: true}
+	if !config.IsDebug() {
+		t.Errorf("Expected IsDebug to be true, got false")
+	}
+}
