@@ -57,37 +57,39 @@
 				
 				<option value="file0">github.com/sabasm/go-server/cmd/main.go (83.3%)</option>
 				
-				<option value="file1">github.com/sabasm/go-server/cmd/server/main.go (83.3%)</option>
+				<option value="file1">github.com/sabasm/go-server/cmd/mvp-api/main.go (83.3%)</option>
 				
-				<option value="file2">github.com/sabasm/go-server/internal/api/core/api.go (100.0%)</option>
+				<option value="file2">github.com/sabasm/go-server/cmd/server/main.go (83.3%)</option>
 				
-				<option value="file3">github.com/sabasm/go-server/internal/api/core/docs/docs.go (100.0%)</option>
+				<option value="file3">github.com/sabasm/go-server/internal/api/core/api.go (100.0%)</option>
 				
-				<option value="file4">github.com/sabasm/go-server/internal/api/core/handlers/responsewriter.go (100.0%)</option>
+				<option value="file4">github.com/sabasm/go-server/internal/api/core/docs/docs.go (100.0%)</option>
 				
-				<option value="file5">github.com/sabasm/go-server/internal/api/handlers/health/health.go (83.3%)</option>
+				<option value="file5">github.com/sabasm/go-server/internal/api/core/handlers/responsewriter.go (100.0%)</option>
 				
-				<option value="file6">github.com/sabasm/go-server/internal/api/handlers/root/root.go (80.0%)</option>
+				<option value="file6">github.com/sabasm/go-server/internal/api/handlers/health/health.go (83.3%)</option>
 				
-				<option value="file7">github.com/sabasm/go-server/internal/api/integration/utils.go (75.0%)</option>
+				<option value="file7">github.com/sabasm/go-server/internal/api/handlers/root/root.go (80.0%)</option>
 				
-				<option value="file8">github.com/sabasm/go-server/internal/config/config.go (100.0%)</option>
+				<option value="file8">github.com/sabasm/go-server/internal/api/integration/utils.go (75.0%)</option>
 				
-				<option value="file9">github.com/sabasm/go-server/internal/copycmd/command.go (75.0%)</option>
+				<option value="file9">github.com/sabasm/go-server/internal/config/config.go (100.0%)</option>
 				
-				<option value="file10">github.com/sabasm/go-server/internal/middleware/logging.go (100.0%)</option>
+				<option value="file10">github.com/sabasm/go-server/internal/copycmd/command.go (75.0%)</option>
 				
-				<option value="file11">github.com/sabasm/go-server/internal/middleware/recovery.go (100.0%)</option>
+				<option value="file11">github.com/sabasm/go-server/internal/middleware/logging.go (100.0%)</option>
 				
-				<option value="file12">github.com/sabasm/go-server/internal/server/builder.go (50.0%)</option>
+				<option value="file12">github.com/sabasm/go-server/internal/middleware/recovery.go (100.0%)</option>
 				
-				<option value="file13">github.com/sabasm/go-server/internal/server/config.go (16.7%)</option>
+				<option value="file13">github.com/sabasm/go-server/internal/server/builder.go (50.0%)</option>
 				
-				<option value="file14">github.com/sabasm/go-server/internal/server/server.go (100.0%)</option>
+				<option value="file14">github.com/sabasm/go-server/internal/server/config.go (16.7%)</option>
 				
-				<option value="file15">github.com/sabasm/go-server/internal/utils/json.go (100.0%)</option>
+				<option value="file15">github.com/sabasm/go-server/internal/server/server.go (100.0%)</option>
 				
-				<option value="file16">github.com/sabasm/go-server/main.go (66.7%)</option>
+				<option value="file16">github.com/sabasm/go-server/internal/utils/json.go (100.0%)</option>
+				
+				<option value="file17">github.com/sabasm/go-server/main.go (66.7%)</option>
 				
 				</select>
 			</div>
@@ -189,7 +191,86 @@ func handleServerShutdown(srv server.ServerInterface) <span class="cov8" title="
 }
 </pre>
 		
-		<pre class="file" id="file1" style="display: none">// cmd/server/main.go
+		<pre class="file" id="file1" style="display: none">package main
+
+import (
+        "context"
+        "log"
+        "net/http"
+        "os"
+        "os/signal"
+        "syscall"
+        "time"
+
+        "github.com/gorilla/mux"
+        "github.com/sabasm/go-server/internal/api/handlers/health"
+        "github.com/sabasm/go-server/internal/api/handlers/root"
+        "github.com/sabasm/go-server/internal/config"
+        "github.com/sabasm/go-server/internal/middleware"
+        "github.com/sabasm/go-server/internal/server"
+        "go.uber.org/zap"
+)
+
+func main() <span class="cov8" title="1">{
+        appConfig := config.LoadFromEnv()
+        logger, err := zap.NewProduction()
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to initialize logger: %v", err)
+        }</span>
+        <span class="cov8" title="1">defer func() </span><span class="cov8" title="1">{
+                if syncErr := logger.Sync(); syncErr != nil </span><span class="cov8" title="1">{
+                        log.Printf("Logger sync error: %v", syncErr)
+                }</span>
+        }()
+
+        <span class="cov8" title="1">router := mux.NewRouter()
+        router.Use(middleware.LoggingMiddleware(logger))
+
+        srvCfg := server.Config{
+                Host:     appConfig.GetAppHost(),
+                Port:     appConfig.GetAppPort(),
+                BasePath: "/",
+                Options: server.Options{
+                        ReadTimeout:  15 * time.Second,
+                        WriteTimeout: 15 * time.Second,
+                        IdleTimeout:  60 * time.Second,
+                },
+        }
+
+        srv := server.NewBuilder(&amp;srvCfg).
+                WithLogger(logger).
+                WithRoute("/health", health.New().ServeHTTP).
+                WithRoute("/", root.New().ServeHTTP).
+                Build()
+
+        serverError := make(chan error, 1)
+        go func() </span><span class="cov8" title="1">{
+                if err := srv.Start(); err != nil &amp;&amp; err != http.ErrServerClosed </span><span class="cov0" title="0">{
+                        serverError &lt;- err
+                }</span>
+        }()
+
+        <span class="cov8" title="1">sigChan := make(chan os.Signal, 1)
+        signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+        select </span>{
+        case &lt;-sigChan:<span class="cov8" title="1">
+                handleServerShutdown(srv)</span>
+        case err := &lt;-serverError:<span class="cov0" title="0">
+                log.Printf("Server error: %v", err)</span>
+        }
+}
+
+func handleServerShutdown(srv server.ServerInterface) <span class="cov8" title="1">{
+        ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+        defer cancel()
+        if err := srv.Shutdown(ctx); err != nil </span><span class="cov0" title="0">{
+                log.Printf("Server forced to shutdown: %v", err)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">// cmd/server/main.go
 package main
 
 import (
@@ -269,7 +350,7 @@ func handleServerShutdown(srv server.ServerInterface) <span class="cov8" title="
 }
 </pre>
 		
-		<pre class="file" id="file2" style="display: none">package api
+		<pre class="file" id="file3" style="display: none">package api
 
 type API struct{}
 
@@ -278,7 +359,7 @@ func NewAPI() *API <span class="cov8" title="1">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file3" style="display: none">package docs
+		<pre class="file" id="file4" style="display: none">package docs
 
 type SwaggerInfo struct {
         Title       string
@@ -306,7 +387,7 @@ func ServiceStatus() SwaggerInfo <span class="cov8" title="1">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file4" style="display: none">package handlers
+		<pre class="file" id="file5" style="display: none">package handlers
 
 import (
         "bytes"
@@ -344,7 +425,7 @@ func (b *BufferedResponseWriter) Flush() error <span class="cov10" title="2">{
 }
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">package health
+		<pre class="file" id="file6" style="display: none">package health
 
 import (
         "encoding/json"
@@ -374,7 +455,7 @@ func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span 
 }
 </pre>
 		
-		<pre class="file" id="file6" style="display: none">package root
+		<pre class="file" id="file7" style="display: none">package root
 
 import (
         "encoding/json"
@@ -400,7 +481,7 @@ func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span cl
 }
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package integration
+		<pre class="file" id="file8" style="display: none">package integration
 
 import "net"
 
@@ -420,7 +501,7 @@ func getAvailablePort() (int, error) <span class="cov8" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">// internal/config/config.go
+		<pre class="file" id="file9" style="display: none">// internal/config/config.go
 package config
 
 import (
@@ -539,7 +620,7 @@ func getEnvAsBool(key string, fallback bool) bool <span class="cov7" title="5">{
 }
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package copycmd
+		<pre class="file" id="file10" style="display: none">package copycmd
 
 import (
         "io"
@@ -568,7 +649,7 @@ func CopyFile(source, dest string) error <span class="cov8" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package middleware
+		<pre class="file" id="file11" style="display: none">package middleware
 
 import (
         "net/http"
@@ -592,7 +673,7 @@ func LoggingMiddleware(logger *zap.Logger) mux.MiddlewareFunc <span class="cov8"
 }
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package middleware
+		<pre class="file" id="file12" style="display: none">package middleware
 
 import (
         "net/http"
@@ -618,7 +699,7 @@ func RecoveryMiddleware(logger *zap.Logger) mux.MiddlewareFunc <span class="cov1
 }
 </pre>
 		
-		<pre class="file" id="file12" style="display: none">package server
+		<pre class="file" id="file13" style="display: none">package server
 
 import (
         "net/http"
@@ -683,7 +764,7 @@ func (b *serverBuilder) Build() ServerInterface <span class="cov10" title="5">{
 }
 </pre>
 		
-		<pre class="file" id="file13" style="display: none">package server
+		<pre class="file" id="file14" style="display: none">package server
 
 import (
         "fmt"
@@ -718,7 +799,7 @@ func (c *Config) Validate() error <span class="cov0" title="0">{
 }
 </pre>
 		
-		<pre class="file" id="file14" style="display: none">package server
+		<pre class="file" id="file15" style="display: none">package server
 
 import (
         "context"
@@ -748,7 +829,7 @@ func (s *Server) Shutdown(ctx context.Context) error <span class="cov10" title="
 }</span>
 </pre>
 		
-		<pre class="file" id="file15" style="display: none">package utils
+		<pre class="file" id="file16" style="display: none">package utils
 
 import (
         "encoding/json"
@@ -762,7 +843,7 @@ func WriteJSONResponse(w http.ResponseWriter, status int, payload interface{}) e
 }</span>
 </pre>
 		
-		<pre class="file" id="file16" style="display: none">package main
+		<pre class="file" id="file17" style="display: none">package main
 
 import (
         "context"

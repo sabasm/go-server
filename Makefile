@@ -5,10 +5,9 @@ GOLINT := ./bin/golangci-lint
 APP_NAME := hello-world-go
 VERSION := v1.0.0
 BINARY_DIR := bin
-CMD_DIR := ./cmd/server
 DOCKER_IMAGE := $(APP_NAME):$(VERSION)
 
-.PHONY: all setup check build lint fmt vet test integration-test docker-build docker-run clean release dev help
+.PHONY: all setup check build lint fmt vet test integration-test docker-build docker-run clean release dev help qcheck
 
 all: setup check build
 
@@ -33,7 +32,7 @@ test:
 	@$(GOCOVER) -html=coverage.out -o coverage.html
 
 build:
-	@$(GO) build -v -o $(BINARY_DIR)/$(APP_NAME) $(CMD_DIR)
+	@$(GO) build -v -o $(BINARY_DIR)/$(APP_NAME) ./cmd/server
 
 integration-test:
 	@$(GO) test -tags=integration -v ./...
@@ -74,4 +73,13 @@ help:
 	@echo "  clean            - Remove build artifacts"
 	@echo "  release          - Create a new release"
 	@echo "  dev              - Set up development environment"
+	@echo "  qcheck           - Run tests for a specific directory"
 
+qcheck:
+	@if [ -n "$(DIR)" ]; then \
+		echo "Running tests for ./cmd/$(DIR)..."; \
+		$(GO) test -v ./cmd/$(DIR)...; \
+	else \
+		echo "Running tests for all packages..."; \
+		$(GO) test -v ./...; \
+	fi
