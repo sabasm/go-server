@@ -55,7 +55,7 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/sabasm/go-server/cmd/mvp-api/main.go (82.6%)</option>
+				<option value="file0">github.com/sabasm/go-server/cmd/mvp-api/main.go (78.9%)</option>
 				
 				</select>
 			</div>
@@ -78,7 +78,8 @@
 		</div>
 		<div id="content">
 		
-		<pre class="file" id="file0" style="display: none">package main
+		<pre class="file" id="file0" style="display: none">// cmd/mvp-api/main.go
+package main
 
 import (
         "context"
@@ -90,6 +91,7 @@ import (
         "time"
 
         "github.com/gorilla/mux"
+        "github.com/sabasm/go-server/internal/api/core/handlers"
         "github.com/sabasm/go-server/internal/api/handlers/health"
         "github.com/sabasm/go-server/internal/api/handlers/root"
         "github.com/sabasm/go-server/internal/config"
@@ -98,60 +100,103 @@ import (
         "go.uber.org/zap"
 )
 
-func main() <span class="cov8" title="1">{
+func main() <span class="cov1" title="1">{
+        // Configuration initialization and validation
         appConfig := config.LoadFromEnv()
-        logger, err := zap.NewProduction()
-        if err != nil </span><span class="cov0" title="0">{
-                log.Fatalf("Failed to initialize logger: %v", err)
+        if err := appConfig.Validate(); err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Configuration validation failed: %v", err)
         }</span>
 
-        <span class="cov8" title="1">router := mux.NewRouter()
-        router.Use(middleware.LoggingMiddleware(logger))
+        // Logger setup with error handling
+        <span class="cov1" title="1">logger, err := zap.NewProduction()
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Logger initialization failed: %v", err)
+        }</span>
+        <span class="cov1" title="1">defer func() </span><span class="cov1" title="1">{
+                if err := logger.Sync(); err != nil </span><span class="cov1" title="1">{
+                        log.Printf("Logger sync error: %v", err)
+                }</span>
+        }()
 
-        srvCfg := server.Config{
+        // Server configuration with validation
+        <span class="cov1" title="1">srvCfg := &amp;server.Config{
                 Host:     appConfig.GetAppHost(),
                 Port:     appConfig.GetAppPort(),
                 BasePath: "/",
                 Options: server.Options{
-                        ReadTimeout:  15 * time.Second,
-                        WriteTimeout: 15 * time.Second,
-                        IdleTimeout:  60 * time.Second,
+                        ReadTimeout:    15 * time.Second,
+                        WriteTimeout:   15 * time.Second,
+                        IdleTimeout:    60 * time.Second,
+                        MaxHeaderBytes: 1 &lt;&lt; 20,
                 },
         }
 
-        srv := server.NewBuilder(&amp;srvCfg).
+        if err := srvCfg.Validate(); err != nil </span><span class="cov0" title="0">{
+                logger.Fatal("Server configuration validation failed",
+                        zap.Error(err),
+                        zap.Any("config", srvCfg))
+        }</span>
+
+        // Router setup with complete middleware chain
+        <span class="cov1" title="1">router := mux.NewRouter()
+        router.Use(middleware.RecoveryMiddleware(logger))
+        router.Use(middleware.LoggingMiddleware(logger))
+
+        // Server builder with all components
+        srv := server.NewBuilder(srvCfg).
                 WithLogger(logger).
-                WithRoute("/health", health.New().ServeHTTP).
-                WithRoute("/", root.New().ServeHTTP).
+                WithTimeout(
+                        srvCfg.Options.ReadTimeout,
+                        srvCfg.Options.WriteTimeout,
+                        srvCfg.Options.IdleTimeout,
+                ).
+                WithRoute("/health", wrapHandler(health.New(), logger)).
+                WithRoute("/", wrapHandler(root.New(), logger)).
                 Build()
 
+        // Server lifecycle management
         serverError := make(chan error, 1)
-        go func() </span><span class="cov8" title="1">{
+        go func() </span><span class="cov1" title="1">{
+                logger.Info("Starting server",
+                        zap.String("host", srvCfg.Host),
+                        zap.Int("port", srvCfg.Port))
                 if err := srv.Start(); err != nil &amp;&amp; err != http.ErrServerClosed </span><span class="cov0" title="0">{
+                        logger.Error("Server error occurred", zap.Error(err))
                         serverError &lt;- err
                 }</span>
         }()
 
-        <span class="cov8" title="1">sigChan := make(chan os.Signal, 1)
+        // Signal handling
+        <span class="cov1" title="1">sigChan := make(chan os.Signal, 1)
         signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
         select </span>{
-        case &lt;-sigChan:<span class="cov8" title="1">
-                handleServerShutdown(srv)</span>
+        case &lt;-sigChan:<span class="cov1" title="1">
+                handleServerShutdown(srv, logger)</span>
         case err := &lt;-serverError:<span class="cov0" title="0">
-                log.Printf("Server error: %v", err)</span>
+                logger.Error("Fatal server error", zap.Error(err))</span>
         }
-
-        <span class="cov8" title="1">if err := logger.Sync(); err != nil </span><span class="cov8" title="1">{
-                log.Printf("Logger sync error: %v", err)
-        }</span>
 }
 
-func handleServerShutdown(srv server.ServerInterface) <span class="cov8" title="1">{
+func wrapHandler(h http.Handler, logger *zap.Logger) http.HandlerFunc <span class="cov10" title="2">{
+        return func(w http.ResponseWriter, r *http.Request) </span><span class="cov10" title="2">{
+                bw := handlers.NewBufferedResponseWriter(w)
+                defer func() </span><span class="cov10" title="2">{
+                        if err := bw.Flush(); err != nil </span><span class="cov0" title="0">{
+                                logger.Error("Response flush failed", zap.Error(err))
+                        }</span>
+                }()
+                <span class="cov10" title="2">h.ServeHTTP(bw, r)</span>
+        }
+}
+
+func handleServerShutdown(srv server.ServerInterface, logger *zap.Logger) <span class="cov1" title="1">{
+        logger.Info("Initiating graceful shutdown")
         ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
         defer cancel()
+
         if err := srv.Shutdown(ctx); err != nil </span><span class="cov0" title="0">{
-                log.Printf("Server forced to shutdown: %v", err)
+                logger.Error("Forced shutdown required", zap.Error(err))
         }</span>
 }
 </pre>

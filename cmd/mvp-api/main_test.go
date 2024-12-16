@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"os"
 	"syscall"
@@ -15,50 +16,105 @@ import (
 )
 
 func TestMainFunction(t *testing.T) {
-	// Override environment variables
-	os.Setenv("APP_PORT", "3003")
-	defer os.Unsetenv("APP_PORT")
+	// Environment setup
+	envVars := map[string]string{
+		"APP_PORT": "3003",
+		"APP_HOST": "localhost",
+		"DEBUG":    "true",
+	}
 
-	// Run the main function in a separate goroutine
+	for k, v := range envVars {
+		os.Setenv(k, v)
+	}
+	defer func() {
+		for k := range envVars {
+			os.Unsetenv(k)
+		}
+	}()
+
+	// Start server
 	go func() {
 		main()
 	}()
 
-	// Allow server time to start
+	// Wait for server readiness
 	time.Sleep(100 * time.Millisecond)
 
-	// Test Health Check Endpoint
-	t.Run("HealthCheck", func(t *testing.T) {
-		resp, err := http.Get("http://localhost:3003/health")
-		if err != nil {
-			t.Fatalf("Failed to reach health endpoint: %v", err)
-		}
-		defer resp.Body.Close()
+	// Test cases
+	tests := []struct {
+		name           string
+		path           string
+		expectedCode   int
+		expectedBody   map[string]string
+		expectedMethod string
+	}{
+		{
+			name:           "Health Check Endpoint",
+			path:           "/health",
+			expectedCode:   http.StatusOK,
+			expectedBody:   map[string]string{"status": "OK"},
+			expectedMethod: http.MethodGet,
+		},
+		{
+			name:           "Root Endpoint",
+			path:           "/",
+			expectedCode:   http.StatusOK,
+			expectedBody:   map[string]string{"message": "Welcome to Go Server"},
+			expectedMethod: http.MethodGet,
+		},
+		{
+			name:           "Not Found Endpoint",
+			path:           "/notfound",
+			expectedCode:   http.StatusNotFound,
+			expectedMethod: http.MethodGet,
+		},
+	}
 
-		if resp.StatusCode != http.StatusOK {
-			t.Errorf("Expected status 200, got %d", resp.StatusCode)
-		}
-	})
+	client := &http.Client{Timeout: 5 * time.Second}
 
-	// Test Root Endpoint
-	t.Run("RootHandler", func(t *testing.T) {
-		resp, err := http.Get("http://localhost:3003/")
-		if err != nil {
-			t.Fatalf("Failed to reach root endpoint: %v", err)
-		}
-		defer resp.Body.Close()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := http.NewRequest(tt.expectedMethod,
+				"http://localhost:3003"+tt.path, nil)
+			if err != nil {
+				t.Fatalf("Failed to create request: %v", err)
+			}
 
-		if resp.StatusCode != http.StatusOK {
-			t.Errorf("Expected status 200, got %d", resp.StatusCode)
-		}
-	})
+			resp, err := client.Do(req)
+			if err != nil {
+				t.Fatalf("Request failed: %v", err)
+			}
+			defer resp.Body.Close()
 
-	// Trigger SIGTERM to gracefully shut down
-	proc, _ := os.FindProcess(os.Getpid())
-	_ = proc.Signal(syscall.SIGTERM)
+			if resp.StatusCode != tt.expectedCode {
+				t.Errorf("Expected status %d, got %d",
+					tt.expectedCode, resp.StatusCode)
+			}
 
-	// Allow shutdown process
-	time.Sleep(200 * time.Millisecond)
+			if tt.expectedBody != nil {
+				var got map[string]string
+				if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+					t.Fatalf("Failed to decode response: %v", err)
+				}
+				for k, v := range tt.expectedBody {
+					if got[k] != v {
+						t.Errorf("Expected %s to be %s, got %s",
+							k, v, got[k])
+					}
+				}
+			}
+		})
+	}
+
+	// Graceful shutdown
+	proc, err := os.FindProcess(os.Getpid())
+	if err != nil {
+		t.Fatalf("Failed to find process: %v", err)
+	}
+
+	if err := proc.Signal(syscall.SIGTERM); err != nil {
+		t.Errorf("Failed to send SIGTERM: %v", err)
+	}
 }
 
 func TestHandleServerShutdown(t *testing.T) {
@@ -66,6 +122,11 @@ func TestHandleServerShutdown(t *testing.T) {
 		Host:     "localhost",
 		Port:     3004,
 		BasePath: "/",
+		Options: server.Options{
+			ReadTimeout:  5 * time.Second,
+			WriteTimeout: 5 * time.Second,
+			IdleTimeout:  30 * time.Second,
+		},
 	}
 
 	srv := server.NewBuilder(cfg).
@@ -73,20 +134,28 @@ func TestHandleServerShutdown(t *testing.T) {
 		WithRoute("/", root.New().ServeHTTP).
 		Build()
 
+	serverErr := make(chan error, 1)
 	go func() {
 		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
-			t.Errorf("Server start error: %v", err)
+			serverErr <- err
 		}
 	}()
 
+	// Allow server to start
 	time.Sleep(100 * time.Millisecond)
 
-	t.Run("GracefulShutdown", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	t.Run("Validates Graceful Shutdown", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		if err := srv.Shutdown(ctx); err != nil {
-			t.Errorf("Server shutdown failed: %v", err)
+			t.Errorf("Shutdown failed: %v", err)
+		}
+
+		select {
+		case err := <-serverErr:
+			t.Errorf("Unexpected server error: %v", err)
+		default:
 		}
 	})
 }

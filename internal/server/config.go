@@ -20,15 +20,30 @@ type Options struct {
 }
 
 func (c *Config) GetAddress() string {
+	if c == nil {
+		return ""
+	}
 	return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }
 
 func (c *Config) Validate() error {
-	if c.Port <= 0 {
-		return fmt.Errorf("expected positive port number")
+	if c == nil {
+		return fmt.Errorf("config cannot be nil")
+	}
+	if c.Port <= 0 || c.Port > 65535 {
+		return fmt.Errorf("invalid port number: %d", c.Port)
 	}
 	if c.Host == "" {
-		return fmt.Errorf("expected non-empty host")
+		return fmt.Errorf("host cannot be empty")
+	}
+	if c.Options.ReadTimeout <= 0 {
+		return fmt.Errorf("read timeout must be positive")
+	}
+	if c.Options.WriteTimeout <= 0 {
+		return fmt.Errorf("write timeout must be positive")
+	}
+	if c.Options.IdleTimeout <= 0 {
+		return fmt.Errorf("idle timeout must be positive")
 	}
 	return nil
 }
