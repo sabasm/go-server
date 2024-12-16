@@ -24,11 +24,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize logger: %v", err)
 	}
-	defer func() {
-		if syncErr := logger.Sync(); syncErr != nil {
-			log.Printf("Logger sync error: %v", syncErr)
-		}
-	}()
 
 	router := mux.NewRouter()
 	router.Use(middleware.LoggingMiddleware(logger))
@@ -65,6 +60,10 @@ func main() {
 		handleServerShutdown(srv)
 	case err := <-serverError:
 		log.Printf("Server error: %v", err)
+	}
+
+	if err := logger.Sync(); err != nil {
+		log.Printf("Logger sync error: %v", err)
 	}
 }
 

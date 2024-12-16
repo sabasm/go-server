@@ -13,9 +13,10 @@ type Config struct {
 }
 
 type Options struct {
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	IdleTimeout  time.Duration
+	ReadTimeout    time.Duration
+	WriteTimeout   time.Duration
+	IdleTimeout    time.Duration
+	MaxHeaderBytes int
 }
 
 func (c *Config) GetAddress() string {
