@@ -1,4 +1,3 @@
-// cmd/mvp-api/main.go
 package main
 
 import (
@@ -15,30 +14,26 @@ import (
 	"github.com/sabasm/go-server/internal/api/handlers/health"
 	"github.com/sabasm/go-server/internal/api/handlers/root"
 	"github.com/sabasm/go-server/internal/config"
+	"github.com/sabasm/go-server/internal/logger"
 	"github.com/sabasm/go-server/internal/middleware"
 	"github.com/sabasm/go-server/internal/server"
 	"go.uber.org/zap"
 )
 
 func main() {
-	// Configuration initialization and validation
 	appConfig := config.LoadFromEnv()
 	if err := appConfig.Validate(); err != nil {
 		log.Fatalf("Configuration validation failed: %v", err)
 	}
 
-	// Logger setup with error handling
-	logger, err := zap.NewProduction()
+	logger, err := logger.NewLogger()
 	if err != nil {
 		log.Fatalf("Logger initialization failed: %v", err)
 	}
 	defer func() {
-		if err := logger.Sync(); err != nil {
-			log.Printf("Logger sync error: %v", err)
-		}
+		_ = logger.Sync()
 	}()
 
-	// Server configuration with validation
 	srvCfg := &server.Config{
 		Host:     appConfig.GetAppHost(),
 		Port:     appConfig.GetAppPort(),
@@ -57,12 +52,10 @@ func main() {
 			zap.Any("config", srvCfg))
 	}
 
-	// Router setup with complete middleware chain
 	router := mux.NewRouter()
 	router.Use(middleware.RecoveryMiddleware(logger))
 	router.Use(middleware.LoggingMiddleware(logger))
 
-	// Server builder with all components
 	srv := server.NewBuilder(srvCfg).
 		WithLogger(logger).
 		WithTimeout(
@@ -74,7 +67,6 @@ func main() {
 		WithRoute("/", wrapHandler(root.New(), logger)).
 		Build()
 
-	// Server lifecycle management
 	serverError := make(chan error, 1)
 	go func() {
 		logger.Info("Starting server",
@@ -86,7 +78,6 @@ func main() {
 		}
 	}()
 
-	// Signal handling
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 

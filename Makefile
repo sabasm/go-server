@@ -7,7 +7,7 @@ VERSION := v1.0.0
 BINARY_DIR := bin
 DOCKER_IMAGE := $(APP_NAME):$(VERSION)
 MVP_DIR := ./cmd/mvp-api
-MIN_COVERAGE := 80
+MIN_COVERAGE := 80.0
 
 .PHONY: all setup check build lint fmt vet test integration-test docker-build docker-run clean release dev help qcheck check-mvp
 
@@ -28,16 +28,17 @@ check-mvp: setup
 	@echo "Vetting..."
 	@$(GO) vet $(MVP_DIR)/...
 	@echo "Testing with coverage..."
-	@$(GO) test -v -race -coverprofile=coverage.mvp.out $(MVP_DIR)/...
+	@LOGGER_MODE=test $(GO) test -v -race -coverprofile=coverage.mvp.out $(MVP_DIR)/...
 	@$(GOCOVER) -func=coverage.mvp.out | tee coverage.mvp.txt
 	@echo "Verifying coverage threshold..."
-	@if [ $$(tail -n 1 coverage.mvp.txt | awk '{print $$NF}' | sed 's/%//') -lt $(MIN_COVERAGE) ]; then \
-		echo "Test coverage below $(MIN_COVERAGE)%"; \
+	@coverage=$$(tail -n 1 coverage.mvp.txt | awk '{print $$NF}' | sed 's/%//'); \
+	if (( $$(echo "$$coverage < $(MIN_COVERAGE)" | bc -l) )); then \
+		echo "Test coverage below $(MIN_COVERAGE)%: $$coverage%"; \
 		exit 1; \
 	fi
 	@$(GOCOVER) -html=coverage.mvp.out -o coverage.mvp.html
 	@echo "Running integration tests..."
-	@$(GO) test -tags=integration -v $(MVP_DIR)/...
+	@LOGGER_MODE=test $(GO) test -tags=integration -v $(MVP_DIR)/...
 	@echo "Building MVP API..."
 	@CGO_ENABLED=0 $(GO) build -v -o $(BINARY_DIR)/mvp-api $(MVP_DIR)
 	@echo "MVP API checks completed"
@@ -52,7 +53,7 @@ vet:
 	@$(GO) vet ./...
 
 test:
-	@$(GO) test -v -race -p 1 -coverprofile=coverage.out ./...
+	@LOGGER_MODE=test $(GO) test -v -race -p 1 -coverprofile=coverage.out ./...
 	@$(GOCOVER) -func=coverage.out
 	@$(GOCOVER) -html=coverage.out -o coverage.html
 
@@ -60,7 +61,7 @@ build:
 	@CGO_ENABLED=0 $(GO) build -v -o $(BINARY_DIR)/$(APP_NAME) ./cmd/server
 
 integration-test:
-	@$(GO) test -tags=integration -v ./...
+	@LOGGER_MODE=test $(GO) test -tags=integration -v ./...
 
 docker-build:
 	@docker build -t $(DOCKER_IMAGE) .
@@ -108,8 +109,10 @@ help:
 qcheck:
 	@if [ -n "$(DIR)" ]; then \
 		echo "Running tests for ./cmd/$(DIR)..."; \
-		$(GO) test -v ./cmd/$(DIR)...; \
+		LOGGER_MODE=test $(GO) test -v ./cmd/$(DIR)...; \
 	else \
 		echo "Running tests for all packages..."; \
-		$(GO) test -v ./...; \
+		LOGGER_MODE=test $(GO) test -v ./...; \
 	fi
+
+

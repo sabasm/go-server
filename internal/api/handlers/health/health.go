@@ -11,11 +11,11 @@ func New() *HealthHandler {
 	return &HealthHandler{}
 }
 
-func (h *HealthHandler) ValidateRequest(r *http.Request) error {
-	return nil
-}
-
 func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	response := struct {
 		Status string `json:"status"`

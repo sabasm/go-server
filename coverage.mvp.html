@@ -55,7 +55,7 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/sabasm/go-server/cmd/mvp-api/main.go (78.9%)</option>
+				<option value="file0">github.com/sabasm/go-server/cmd/mvp-api/main.go (83.8%)</option>
 				
 				</select>
 			</div>
@@ -78,8 +78,7 @@
 		</div>
 		<div id="content">
 		
-		<pre class="file" id="file0" style="display: none">// cmd/mvp-api/main.go
-package main
+		<pre class="file" id="file0" style="display: none">package main
 
 import (
         "context"
@@ -95,30 +94,26 @@ import (
         "github.com/sabasm/go-server/internal/api/handlers/health"
         "github.com/sabasm/go-server/internal/api/handlers/root"
         "github.com/sabasm/go-server/internal/config"
+        "github.com/sabasm/go-server/internal/logger"
         "github.com/sabasm/go-server/internal/middleware"
         "github.com/sabasm/go-server/internal/server"
         "go.uber.org/zap"
 )
 
 func main() <span class="cov1" title="1">{
-        // Configuration initialization and validation
         appConfig := config.LoadFromEnv()
         if err := appConfig.Validate(); err != nil </span><span class="cov0" title="0">{
                 log.Fatalf("Configuration validation failed: %v", err)
         }</span>
 
-        // Logger setup with error handling
-        <span class="cov1" title="1">logger, err := zap.NewProduction()
+        <span class="cov1" title="1">logger, err := logger.NewLogger()
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatalf("Logger initialization failed: %v", err)
         }</span>
         <span class="cov1" title="1">defer func() </span><span class="cov1" title="1">{
-                if err := logger.Sync(); err != nil </span><span class="cov1" title="1">{
-                        log.Printf("Logger sync error: %v", err)
-                }</span>
-        }()
+                _ = logger.Sync()
+        }</span>()
 
-        // Server configuration with validation
         <span class="cov1" title="1">srvCfg := &amp;server.Config{
                 Host:     appConfig.GetAppHost(),
                 Port:     appConfig.GetAppPort(),
@@ -137,12 +132,10 @@ func main() <span class="cov1" title="1">{
                         zap.Any("config", srvCfg))
         }</span>
 
-        // Router setup with complete middleware chain
         <span class="cov1" title="1">router := mux.NewRouter()
         router.Use(middleware.RecoveryMiddleware(logger))
         router.Use(middleware.LoggingMiddleware(logger))
 
-        // Server builder with all components
         srv := server.NewBuilder(srvCfg).
                 WithLogger(logger).
                 WithTimeout(
@@ -154,7 +147,6 @@ func main() <span class="cov1" title="1">{
                 WithRoute("/", wrapHandler(root.New(), logger)).
                 Build()
 
-        // Server lifecycle management
         serverError := make(chan error, 1)
         go func() </span><span class="cov1" title="1">{
                 logger.Info("Starting server",
@@ -166,7 +158,6 @@ func main() <span class="cov1" title="1">{
                 }</span>
         }()
 
-        // Signal handling
         <span class="cov1" title="1">sigChan := make(chan os.Signal, 1)
         signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
@@ -178,24 +169,24 @@ func main() <span class="cov1" title="1">{
         }
 }
 
-func wrapHandler(h http.Handler, logger *zap.Logger) http.HandlerFunc <span class="cov10" title="2">{
-        return func(w http.ResponseWriter, r *http.Request) </span><span class="cov10" title="2">{
+func wrapHandler(h http.Handler, logger *zap.Logger) http.HandlerFunc <span class="cov8" title="3">{
+        return func(w http.ResponseWriter, r *http.Request) </span><span class="cov10" title="4">{
                 bw := handlers.NewBufferedResponseWriter(w)
-                defer func() </span><span class="cov10" title="2">{
-                        if err := bw.Flush(); err != nil </span><span class="cov0" title="0">{
+                defer func() </span><span class="cov10" title="4">{
+                        if err := bw.Flush(); err != nil </span><span class="cov1" title="1">{
                                 logger.Error("Response flush failed", zap.Error(err))
                         }</span>
                 }()
-                <span class="cov10" title="2">h.ServeHTTP(bw, r)</span>
+                <span class="cov10" title="4">h.ServeHTTP(bw, r)</span>
         }
 }
 
-func handleServerShutdown(srv server.ServerInterface, logger *zap.Logger) <span class="cov1" title="1">{
+func handleServerShutdown(srv server.ServerInterface, logger *zap.Logger) <span class="cov5" title="2">{
         logger.Info("Initiating graceful shutdown")
         ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
         defer cancel()
 
-        if err := srv.Shutdown(ctx); err != nil </span><span class="cov0" title="0">{
+        if err := srv.Shutdown(ctx); err != nil </span><span class="cov1" title="1">{
                 logger.Error("Forced shutdown required", zap.Error(err))
         }</span>
 }

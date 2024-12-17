@@ -23,8 +23,8 @@ func TestHealthHandler_ServeHTTP(t *testing.T) {
 		{
 			name:         "invalid method",
 			method:       http.MethodPost,
-			expectedCode: http.StatusOK,
-			expectedBody: map[string]string{"status": "OK"},
+			expectedCode: http.StatusMethodNotAllowed,
+			expectedBody: nil,
 		},
 	}
 
@@ -41,52 +41,18 @@ func TestHealthHandler_ServeHTTP(t *testing.T) {
 				t.Errorf("expected status code %d, got %d", tt.expectedCode, w.Code)
 			}
 
-			var response map[string]string
-			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
-				t.Fatalf("failed to decode response: %v", err)
-			}
+			if tt.expectedBody != nil {
+				var response map[string]string
+				if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+					t.Fatalf("failed to decode response: %v", err)
+				}
 
-			if response["status"] != tt.expectedBody["status"] {
-				t.Errorf("expected body %v, got %v", tt.expectedBody, response)
+				for k, v := range tt.expectedBody {
+					if got, exists := response[k]; !exists || got != v {
+						t.Errorf("expected %s to be %s, got %s", k, v, got)
+					}
+				}
 			}
 		})
 	}
-
-	t.Run("validate request", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/health", nil)
-		if err := handler.ValidateRequest(req); err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
-	})
-}
-
-func TestHealthHandlerEdgeCases(t *testing.T) {
-	t.Run("large payload", func(t *testing.T) {
-		handler := New()
-		req := httptest.NewRequest(http.MethodGet, "/health", nil)
-		w := httptest.NewRecorder()
-
-		handler.ServeHTTP(w, req)
-
-		var response map[string]interface{}
-		if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
-			t.Fatalf("Failed to decode response: %v", err)
-		}
-
-		if w.Code != http.StatusOK {
-			t.Errorf("Expected status OK, got %v", w.Code)
-		}
-	})
-
-	t.Run("invalid request method", func(t *testing.T) {
-		handler := New()
-		req := httptest.NewRequest(http.MethodPost, "/health", nil)
-		w := httptest.NewRecorder()
-
-		handler.ServeHTTP(w, req)
-
-		if w.Code != http.StatusOK {
-			t.Errorf("Expected status OK, got %v", w.Code)
-		}
-	})
 }

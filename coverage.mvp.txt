@@ -1,4 +1,4 @@
-github.com/sabasm/go-server/cmd/mvp-api/main.go:23:	main			77.8%
-github.com/sabasm/go-server/cmd/mvp-api/main.go:101:	wrapHandler		83.3%
-github.com/sabasm/go-server/cmd/mvp-api/main.go:113:	handleServerShutdown	80.0%
-total:							(statements)		78.9%
+github.com/sabasm/go-server/cmd/mvp-api/main.go:23:	main			76.9%
+github.com/sabasm/go-server/cmd/mvp-api/main.go:92:	wrapHandler		100.0%
+github.com/sabasm/go-server/cmd/mvp-api/main.go:104:	handleServerShutdown	100.0%
+total:							(statements)		83.8%
