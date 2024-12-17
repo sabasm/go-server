@@ -11,8 +11,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/sabasm/go-server/internal/api/core/handlers"
-	"github.com/sabasm/go-server/internal/api/handlers/health"
-	"github.com/sabasm/go-server/internal/api/handlers/root"
+	"github.com/sabasm/go-server/internal/api/routes"
 	"github.com/sabasm/go-server/internal/config"
 	"github.com/sabasm/go-server/internal/logger"
 	"github.com/sabasm/go-server/internal/middleware"
@@ -56,6 +55,11 @@ func main() {
 	router.Use(middleware.RecoveryMiddleware(logger))
 	router.Use(middleware.LoggingMiddleware(logger))
 
+	defaultRoutes := routes.GetDefaultRoutes()
+	routes.RegisterRoutes(router, defaultRoutes, func(h http.Handler) http.Handler {
+		return wrapHandler(h, logger)
+	})
+
 	srv := server.NewBuilder(srvCfg).
 		WithLogger(logger).
 		WithTimeout(
@@ -63,9 +67,9 @@ func main() {
 			srvCfg.Options.WriteTimeout,
 			srvCfg.Options.IdleTimeout,
 		).
-		WithRoute("/health", wrapHandler(health.New(), logger)).
-		WithRoute("/", wrapHandler(root.New(), logger)).
 		Build()
+
+	srv.(*server.Server).SetHandler(router)
 
 	serverError := make(chan error, 1)
 	go func() {
@@ -89,8 +93,8 @@ func main() {
 	}
 }
 
-func wrapHandler(h http.Handler, logger *zap.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func wrapHandler(h http.Handler, logger *zap.Logger) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		bw := handlers.NewBufferedResponseWriter(w)
 		defer func() {
 			if err := bw.Flush(); err != nil {
@@ -98,7 +102,7 @@ func wrapHandler(h http.Handler, logger *zap.Logger) http.HandlerFunc {
 			}
 		}()
 		h.ServeHTTP(bw, r)
-	}
+	})
 }
 
 func handleServerShutdown(srv server.ServerInterface, logger *zap.Logger) {

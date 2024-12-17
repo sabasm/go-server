@@ -26,3 +26,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	s.logger.Info("shutting down server")
 	return s.srv.Shutdown(ctx)
 }
+
+func (s *Server) SetHandler(handler http.Handler) {
+	s.srv.Handler = handler
+}
