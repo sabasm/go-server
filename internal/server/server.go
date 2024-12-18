@@ -28,5 +28,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 }
 
 func (s *Server) SetHandler(handler http.Handler) {
-	s.srv.Handler = handler
+	if s != nil && s.srv != nil {
+		s.srv.Handler = handler
+	}
 }

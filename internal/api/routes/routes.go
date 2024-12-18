@@ -21,7 +21,7 @@ func GetDefaultRoutes() []Route {
 		},
 		{
 			Path:    "/",
-			Handler: root.New(),
+			Handler: root.MustNew(),
 		},
 	}
 }

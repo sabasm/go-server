@@ -71,7 +71,7 @@
 				
 				<option value="file7">github.com/sabasm/go-server/internal/api/handlers/health/health.go (87.5%)</option>
 				
-				<option value="file8">github.com/sabasm/go-server/internal/api/handlers/root/root.go (80.0%)</option>
+				<option value="file8">github.com/sabasm/go-server/internal/api/handlers/root/root.go (92.9%)</option>
 				
 				<option value="file9">github.com/sabasm/go-server/internal/api/integration/utils.go (75.0%)</option>
 				
@@ -91,7 +91,7 @@
 				
 				<option value="file17">github.com/sabasm/go-server/internal/server/config.go (75.0%)</option>
 				
-				<option value="file18">github.com/sabasm/go-server/internal/server/server.go (80.0%)</option>
+				<option value="file18">github.com/sabasm/go-server/internal/server/server.go (66.7%)</option>
 				
 				<option value="file19">github.com/sabasm/go-server/internal/utils/json.go (100.0%)</option>
 				
@@ -338,7 +338,6 @@ import (
 func main() <span class="cov8" title="1">{
         appConfig := config.LoadFromEnv()
 
-        // Inicializar Logger
         logr, err := logger.NewLogger([]string{"stdout"})
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatalf("Error al inicializar el logger: %v", err)
@@ -349,7 +348,6 @@ func main() <span class="cov8" title="1">{
                 }</span>
         }()
 
-        // Configurar Rutas
         <span class="cov8" title="1">router := mux.NewRouter()
         router.Use(middleware.LoggingMiddleware(logr))
 
@@ -367,7 +365,7 @@ func main() <span class="cov8" title="1">{
         srv := server.NewBuilder(&amp;srvCfg).
                 WithLogger(logr).
                 WithRoute("/health", health.New().ServeHTTP).
-                WithRoute("/", root.New().ServeHTTP).
+                WithRoute("/", root.MustNew().ServeHTTP).
                 Build()
 
         serverError := make(chan error, 1)
@@ -505,25 +503,70 @@ func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span 
 		<pre class="file" id="file8" style="display: none">package root
 
 import (
-        "encoding/json"
         "net/http"
+
+        "github.com/sabasm/go-server/internal/utils"
+        "go.uber.org/zap"
+)
+
+const (
+        methodNotAllowedMsg = "Method Not Allowed"
+        welcomeMsg          = "Welcome to Go Server"
 )
 
 type RootResponse struct {
-        Message string `json:"message"`
+        Message string `json:"message,omitempty"`
+        Error   string `json:"error,omitempty"`
 }
 
-type RootHandler struct{}
+type RootHandler struct {
+        logger *zap.Logger
+}
 
-func New() *RootHandler <span class="cov8" title="1">{
-        return &amp;RootHandler{}
+func New() (*RootHandler, error) <span class="cov1" title="1">{
+        logger, err := zap.NewProduction()
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov1" title="1">return &amp;RootHandler{
+                logger: logger.Named("root-handler"),
+        }, nil</span>
+}
+
+func MustNew() *RootHandler <span class="cov10" title="9">{
+        logger := zap.NewNop()
+        return &amp;RootHandler{
+                logger: logger.Named("root-handler"),
+        }
 }</span>
 
-func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
-        response := RootResponse{Message: "Welcome to Go Server"}
-        w.Header().Set("Content-Type", "application/json")
-        if err := json.NewEncoder(w).Encode(response); err != nil </span><span class="cov0" title="0">{
-                http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov9" title="8">{
+        allowedMethods := map[string]bool{
+                http.MethodGet:    true,
+                http.MethodPost:   true,
+                http.MethodPut:    true,
+                http.MethodDelete: true,
+                http.MethodPatch:  true,
+        }
+
+        if !allowedMethods[r.Method] </span><span class="cov3" title="2">{
+                if err := utils.WriteJSONResponse(w, http.StatusMethodNotAllowed, RootResponse{
+                        Error: methodNotAllowedMsg,
+                }); err != nil </span><span class="cov1" title="1">{
+                        h.logger.Error("failed to write method not allowed response",
+                                zap.Error(err),
+                                zap.String("method", r.Method))
+                        return
+                }</span>
+                <span class="cov1" title="1">return</span>
+        }
+
+        <span class="cov8" title="6">if err := utils.WriteJSONResponse(w, http.StatusOK, RootResponse{
+                Message: welcomeMsg,
+        }); err != nil </span><span class="cov1" title="1">{
+                h.logger.Error("failed to write success response",
+                        zap.Error(err),
+                        zap.String("method", r.Method))
         }</span>
 }
 </pre>
@@ -571,7 +614,7 @@ func GetDefaultRoutes() []Route <span class="cov1" title="1">{
                 },
                 {
                         Path:    "/",
-                        Handler: root.New(),
+                        Handler: root.MustNew(),
                 },
         }
 }</span>
@@ -1035,8 +1078,10 @@ func (s *Server) Shutdown(ctx context.Context) error <span class="cov10" title="
 }</span>
 
 func (s *Server) SetHandler(handler http.Handler) <span class="cov0" title="0">{
-        s.srv.Handler = handler
-}</span>
+        if s != nil &amp;&amp; s.srv != nil </span><span class="cov0" title="0">{
+                s.srv.Handler = handler
+        }</span>
+}
 </pre>
 		
 		<pre class="file" id="file19" style="display: none">package utils

@@ -21,7 +21,6 @@ import (
 func main() {
 	appConfig := config.LoadFromEnv()
 
-	// Inicializar Logger
 	logr, err := logger.NewLogger([]string{"stdout"})
 	if err != nil {
 		log.Fatalf("Error al inicializar el logger: %v", err)
@@ -32,7 +31,6 @@ func main() {
 		}
 	}()
 
-	// Configurar Rutas
 	router := mux.NewRouter()
 	router.Use(middleware.LoggingMiddleware(logr))
 
@@ -50,7 +48,7 @@ func main() {
 	srv := server.NewBuilder(&srvCfg).
 		WithLogger(logr).
 		WithRoute("/health", health.New().ServeHTTP).
-		WithRoute("/", root.New().ServeHTTP).
+		WithRoute("/", root.MustNew().ServeHTTP).
 		Build()
 
 	serverError := make(chan error, 1)

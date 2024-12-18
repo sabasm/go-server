@@ -25,7 +25,6 @@ func TestIntegrationServer(t *testing.T) {
 		t.Fatalf("Failed to find available port: %v", err)
 	}
 
-	// Build server
 	cfg := &server.Config{
 		Host:     "localhost",
 		Port:     port,
@@ -33,10 +32,9 @@ func TestIntegrationServer(t *testing.T) {
 	}
 	srv := server.NewBuilder(cfg).
 		WithRoute("/health", health.New().ServeHTTP).
-		WithRoute("/", root.New().ServeHTTP).
+		WithRoute("/", root.MustNew().ServeHTTP).
 		Build()
 
-	// Start server in the background safely
 	serverErr := make(chan error, 1)
 	go func() {
 		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
@@ -52,7 +50,6 @@ func TestIntegrationServer(t *testing.T) {
 	}()
 	time.Sleep(100 * time.Millisecond)
 
-	// Define test cases
 	testCases := []struct {
 		name         string
 		method       string
@@ -84,6 +81,23 @@ func TestIntegrationServer(t *testing.T) {
 	}
 
 	client := &http.Client{Timeout: 5 * time.Second}
+	runTests(t, client, testCases, port)
+
+	select {
+	case err := <-serverErr:
+		t.Fatalf("Server failed: %v", err)
+	default:
+	}
+}
+
+func runTests(t *testing.T, client *http.Client, testCases []struct {
+	name         string
+	method       string
+	endpoint     string
+	body         interface{}
+	expectedCode int
+	expectedResp APIResponse
+}, port int) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			var body []byte
@@ -117,11 +131,5 @@ func TestIntegrationServer(t *testing.T) {
 				}
 			}
 		})
-	}
-
-	select {
-	case err := <-serverErr:
-		t.Fatalf("Server failed: %v", err)
-	default:
 	}
 }
