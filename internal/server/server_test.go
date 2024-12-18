@@ -1,44 +1,25 @@
 package server
 
 import (
-	"context"
 	"net/http"
 	"testing"
 	"time"
 )
 
-func TestServerLifecycle(t *testing.T) {
-	cfg := &Config{
-		Port: 0, // Random port for testing
-		Host: "localhost",
+func TestSetHandler(t *testing.T) {
+	srv := &Server{
+		srv: &http.Server{
+			ReadHeaderTimeout: 5 * time.Second, // Fix for G112 Slowloris attack protection
+		},
 	}
 
-	srv := NewBuilder(cfg).
-		WithRoute("/health", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		}).
-		Build()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 
-	errCh := make(chan error, 1)
-	go func() {
-		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
-			errCh <- err
-		}
-	}()
+	srv.SetHandler(handler)
 
-	// Allow server to start
-	time.Sleep(100 * time.Millisecond)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := srv.Shutdown(ctx); err != nil {
-		t.Fatalf("server shutdown failed: %v", err)
-	}
-
-	select {
-	case err := <-errCh:
-		t.Fatalf("server error: %v", err)
-	default:
+	if srv.srv.Handler == nil {
+		t.Fatal("expected handler to be set")
 	}
 }

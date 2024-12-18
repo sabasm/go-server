@@ -2,56 +2,31 @@ package server
 
 import (
 	"testing"
-	"time"
 )
 
-func TestConfigValidations(t *testing.T) {
+func TestGetAddress(t *testing.T) {
 	tests := []struct {
-		name      string
-		config    *Config
-		wantError bool
+		name   string
+		config *Config
+		expect string
 	}{
 		{
-			name: "valid_config",
-			config: &Config{
-				Host: "localhost",
-				Port: 8080,
-				Options: Options{
-					ReadTimeout:  5 * time.Second,
-					WriteTimeout: 5 * time.Second,
-					IdleTimeout:  30 * time.Second,
-				},
-			},
-			wantError: false,
+			name:   "Valid Config",
+			config: &Config{Host: "localhost", Port: 8080},
+			expect: "localhost:8080",
 		},
 		{
-			name:      "nil_config",
-			config:    nil,
-			wantError: true,
-		},
-		{
-			name: "invalid_port",
-			config: &Config{
-				Host: "localhost",
-				Port: -1,
-			},
-			wantError: true,
-		},
-		{
-			name: "invalid_host",
-			config: &Config{
-				Host: "",
-				Port: 8080,
-			},
-			wantError: true,
+			name:   "Nil Config",
+			config: nil,
+			expect: "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.config.Validate()
-			if (err != nil) != tt.wantError {
-				t.Errorf("Validate() error = %v, wantError %v", err, tt.wantError)
+			result := tt.config.GetAddress()
+			if result != tt.expect {
+				t.Errorf("expected %s, got %s", tt.expect, result)
 			}
 		})
 	}

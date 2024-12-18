@@ -1,25 +1,21 @@
 package config
 
-import (
-	"testing"
-)
+import "testing"
 
 const (
-	expectedPort        = 8080
-	expectedHost        = "localhost"
 	expectedLogLevel    = "info"
 	expectedEnvironment = "test"
 )
 
 func TestOptions(t *testing.T) {
 	opts := Options{}
-	opts.Server.Port = expectedPort
-	opts.Server.Host = expectedHost
+	opts.Server.Port = 8080
+	opts.Server.Host = "localhost"
 	opts.Logger.Level = expectedLogLevel
 	opts.App.Environment = expectedEnvironment
 
-	if opts.Server.Port != expectedPort {
-		t.Errorf("expected port %d, got %d", expectedPort, opts.Server.Port)
+	if opts.Server.Port != 8080 {
+		t.Errorf("expected port %d, got %d", 8080, opts.Server.Port)
 	}
 
 	if opts.Logger.Level != expectedLogLevel {
