@@ -1,4 +1,3 @@
-// cmd/server/main.go
 package main
 
 import (
@@ -14,25 +13,28 @@ import (
 	"github.com/sabasm/go-server/internal/api/handlers/health"
 	"github.com/sabasm/go-server/internal/api/handlers/root"
 	"github.com/sabasm/go-server/internal/config"
+	"github.com/sabasm/go-server/internal/logger"
 	"github.com/sabasm/go-server/internal/middleware"
 	"github.com/sabasm/go-server/internal/server"
-	"go.uber.org/zap"
 )
 
 func main() {
 	appConfig := config.LoadFromEnv()
-	logger, err := zap.NewProduction()
+
+	// Inicializar Logger
+	logr, err := logger.NewLogger([]string{"stdout"})
 	if err != nil {
-		log.Fatalf("Failed to initialize logger: %v", err)
+		log.Fatalf("Error al inicializar el logger: %v", err)
 	}
 	defer func() {
-		if syncErr := logger.Sync(); syncErr != nil {
-			log.Printf("Logger sync error: %v", syncErr)
+		if syncErr := logr.Sync(); syncErr != nil {
+			log.Printf("Error de sincronización del logger: %v", syncErr)
 		}
 	}()
 
+	// Configurar Rutas
 	router := mux.NewRouter()
-	router.Use(middleware.LoggingMiddleware(logger))
+	router.Use(middleware.LoggingMiddleware(logr))
 
 	srvCfg := server.Config{
 		Host:     appConfig.GetAppHost(),
@@ -46,7 +48,7 @@ func main() {
 	}
 
 	srv := server.NewBuilder(&srvCfg).
-		WithLogger(logger).
+		WithLogger(logr).
 		WithRoute("/health", health.New().ServeHTTP).
 		WithRoute("/", root.New().ServeHTTP).
 		Build()
@@ -65,7 +67,7 @@ func main() {
 	case <-sigChan:
 		handleServerShutdown(srv)
 	case err := <-serverError:
-		log.Printf("Server error: %v", err)
+		log.Printf("Error del servidor: %v", err)
 	}
 }
 
@@ -73,6 +75,6 @@ func handleServerShutdown(srv server.ServerInterface) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Printf("Server forced to shutdown: %v", err)
+		log.Printf("Apagado forzado del servidor: %v", err)
 	}
 }

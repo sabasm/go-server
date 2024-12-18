@@ -21,16 +21,15 @@ import (
 
 func main() {
 	appConfig := config.LoadFromEnv()
-	if err := appConfig.Validate(); err != nil {
-		log.Fatalf("Configuration validation failed: %v", err)
-	}
 
-	logger, err := logger.NewLogger()
+	logr, err := logger.NewLogger([]string{"stdout"})
 	if err != nil {
 		log.Fatalf("Logger initialization failed: %v", err)
 	}
 	defer func() {
-		_ = logger.Sync()
+		if err := logr.Sync(); err != nil {
+			log.Printf("Logger sync error: %v", err)
+		}
 	}()
 
 	srvCfg := &server.Config{
@@ -46,22 +45,20 @@ func main() {
 	}
 
 	if err := srvCfg.Validate(); err != nil {
-		logger.Fatal("Server configuration validation failed",
-			zap.Error(err),
-			zap.Any("config", srvCfg))
+		logr.Fatal("Server configuration validation failed", zap.Error(err), zap.Any("config", srvCfg))
 	}
 
 	router := mux.NewRouter()
-	router.Use(middleware.RecoveryMiddleware(logger))
-	router.Use(middleware.LoggingMiddleware(logger))
+	router.Use(middleware.RecoveryMiddleware(logr))
+	router.Use(middleware.LoggingMiddleware(logr))
 
 	defaultRoutes := routes.GetDefaultRoutes()
 	routes.RegisterRoutes(router, defaultRoutes, func(h http.Handler) http.Handler {
-		return wrapHandler(h, logger)
+		return wrapHandler(h, logr)
 	})
 
 	srv := server.NewBuilder(srvCfg).
-		WithLogger(logger).
+		WithLogger(logr).
 		WithTimeout(
 			srvCfg.Options.ReadTimeout,
 			srvCfg.Options.WriteTimeout,
@@ -73,11 +70,9 @@ func main() {
 
 	serverError := make(chan error, 1)
 	go func() {
-		logger.Info("Starting server",
-			zap.String("host", srvCfg.Host),
-			zap.Int("port", srvCfg.Port))
+		logr.Info("Starting server", zap.String("host", srvCfg.Host), zap.Int("port", srvCfg.Port))
 		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
-			logger.Error("Server error occurred", zap.Error(err))
+			logr.Error("Server error occurred", zap.Error(err))
 			serverError <- err
 		}
 	}()
@@ -87,30 +82,30 @@ func main() {
 
 	select {
 	case <-sigChan:
-		handleServerShutdown(srv, logger)
+		handleServerShutdown(srv, logr)
 	case err := <-serverError:
-		logger.Error("Fatal server error", zap.Error(err))
+		logr.Error("Fatal server error", zap.Error(err))
 	}
 }
 
-func wrapHandler(h http.Handler, logger *zap.Logger) http.Handler {
+func wrapHandler(h http.Handler, logr *zap.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		bw := handlers.NewBufferedResponseWriter(w)
 		defer func() {
 			if err := bw.Flush(); err != nil {
-				logger.Error("Response flush failed", zap.Error(err))
+				logr.Error("Response flush failed", zap.Error(err))
 			}
 		}()
 		h.ServeHTTP(bw, r)
 	})
 }
 
-func handleServerShutdown(srv server.ServerInterface, logger *zap.Logger) {
-	logger.Info("Initiating graceful shutdown")
+func handleServerShutdown(srv server.ServerInterface, logr *zap.Logger) {
+	logr.Info("Initiating graceful shutdown")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		logger.Error("Forced shutdown required", zap.Error(err))
+		logr.Error("Forced shutdown required", zap.Error(err))
 	}
 }

@@ -120,10 +120,12 @@ func shutdownServer(t *testing.T, proc *os.Process, done chan struct{}) {
 
 func TestMainFunction(t *testing.T) {
 	envVars := map[string]string{
-		"APP_PORT": "3003",
-		"APP_HOST": "localhost",
-		"DEBUG":    "true",
+		"APP_PORT":       "3003",
+		"APP_HOST":       "localhost",
+		"DEBUG":          "true",
+		"MVP_SECRET_KEY": "test-secret-key",
 	}
+
 	setupEnv(envVars)
 	defer cleanupEnv(envVars)
 

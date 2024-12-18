@@ -17,7 +17,6 @@ func LoggingMiddleware(logger *zap.Logger) mux.MiddlewareFunc {
 			next.ServeHTTP(w, r)
 			duration := time.Since(start)
 
-			// Only log if it's not a GET request or takes longer than expected
 			if r.Method != http.MethodGet || duration > time.Millisecond {
 				httpLogger.Info("request",
 					zap.String("method", r.Method),

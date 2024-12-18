@@ -3,7 +3,7 @@
 <html>
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-		<title>handlers: Go Coverage Report</title>
+		<title>config: Go Coverage Report</title>
 		<style>
 			body {
 				background: black;
@@ -55,47 +55,45 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/sabasm/go-server/cmd/auth-server/handlers/auth0.go (57.1%)</option>
+				<option value="file0">github.com/sabasm/go-server/cmd/mvp-api/config/config.go (84.6%)</option>
 				
-				<option value="file1">github.com/sabasm/go-server/cmd/auth-server/handlers/m2m.go (57.1%)</option>
+				<option value="file1">github.com/sabasm/go-server/cmd/mvp-api/config/env.go (87.5%)</option>
 				
-				<option value="file2">github.com/sabasm/go-server/cmd/auth-server/main.go (0.0%)</option>
+				<option value="file2">github.com/sabasm/go-server/cmd/mvp-api/main.go (87.5%)</option>
 				
-				<option value="file3">github.com/sabasm/go-server/cmd/auth-server/service/auth_service.go (100.0%)</option>
+				<option value="file3">github.com/sabasm/go-server/cmd/server/main.go (83.3%)</option>
 				
-				<option value="file4">github.com/sabasm/go-server/cmd/mvp-api/main.go (83.8%)</option>
+				<option value="file4">github.com/sabasm/go-server/internal/api/core/api.go (100.0%)</option>
 				
-				<option value="file5">github.com/sabasm/go-server/cmd/server/main.go (83.3%)</option>
+				<option value="file5">github.com/sabasm/go-server/internal/api/core/docs/docs.go (100.0%)</option>
 				
-				<option value="file6">github.com/sabasm/go-server/internal/api/core/api.go (100.0%)</option>
+				<option value="file6">github.com/sabasm/go-server/internal/api/core/handlers/responsewriter.go (100.0%)</option>
 				
-				<option value="file7">github.com/sabasm/go-server/internal/api/core/docs/docs.go (100.0%)</option>
+				<option value="file7">github.com/sabasm/go-server/internal/api/handlers/health/health.go (87.5%)</option>
 				
-				<option value="file8">github.com/sabasm/go-server/internal/api/core/handlers/responsewriter.go (100.0%)</option>
+				<option value="file8">github.com/sabasm/go-server/internal/api/handlers/root/root.go (80.0%)</option>
 				
-				<option value="file9">github.com/sabasm/go-server/internal/api/handlers/health/health.go (87.5%)</option>
+				<option value="file9">github.com/sabasm/go-server/internal/api/integration/utils.go (75.0%)</option>
 				
-				<option value="file10">github.com/sabasm/go-server/internal/api/handlers/root/root.go (80.0%)</option>
+				<option value="file10">github.com/sabasm/go-server/internal/api/routes/routes.go (100.0%)</option>
 				
-				<option value="file11">github.com/sabasm/go-server/internal/api/integration/utils.go (75.0%)</option>
+				<option value="file11">github.com/sabasm/go-server/internal/config/config.go (100.0%)</option>
 				
-				<option value="file12">github.com/sabasm/go-server/internal/config/config.go (100.0%)</option>
+				<option value="file12">github.com/sabasm/go-server/internal/copycmd/command.go (75.0%)</option>
 				
-				<option value="file13">github.com/sabasm/go-server/internal/copycmd/command.go (75.0%)</option>
+				<option value="file13">github.com/sabasm/go-server/internal/logger/logger.go (100.0%)</option>
 				
-				<option value="file14">github.com/sabasm/go-server/internal/logger/logger.go (33.3%)</option>
+				<option value="file14">github.com/sabasm/go-server/internal/middleware/logging.go (100.0%)</option>
 				
-				<option value="file15">github.com/sabasm/go-server/internal/middleware/logging.go (100.0%)</option>
+				<option value="file15">github.com/sabasm/go-server/internal/middleware/recovery.go (100.0%)</option>
 				
-				<option value="file16">github.com/sabasm/go-server/internal/middleware/recovery.go (100.0%)</option>
+				<option value="file16">github.com/sabasm/go-server/internal/server/builder.go (79.3%)</option>
 				
-				<option value="file17">github.com/sabasm/go-server/internal/server/builder.go (79.3%)</option>
+				<option value="file17">github.com/sabasm/go-server/internal/server/config.go (75.0%)</option>
 				
-				<option value="file18">github.com/sabasm/go-server/internal/server/config.go (75.0%)</option>
+				<option value="file18">github.com/sabasm/go-server/internal/server/server.go (80.0%)</option>
 				
-				<option value="file19">github.com/sabasm/go-server/internal/server/server.go (100.0%)</option>
-				
-				<option value="file20">github.com/sabasm/go-server/internal/utils/json.go (100.0%)</option>
+				<option value="file19">github.com/sabasm/go-server/internal/utils/json.go (100.0%)</option>
 				
 				</select>
 			</div>
@@ -118,73 +116,89 @@
 		</div>
 		<div id="content">
 		
-		<pre class="file" id="file0" style="display: none">package handlers
+		<pre class="file" id="file0" style="display: none">package config
 
 import (
-        "net/http"
+        "fmt"
 
-        "github.com/sabasm/go-server/internal/utils"
+        baseconfig "github.com/sabasm/go-server/internal/config"
 )
 
-type ValidationResponse struct {
-        Valid bool `json:"valid"`
+type MVPConfig struct {
+        baseconfig.BaseConfig
+        SecretKey string
 }
 
-type Auth0Handler struct{}
+func (c *MVPConfig) Validate() error <span class="cov10" title="3">{
+        if err := c.BaseConfig.Validate(); err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov10" title="3">if c.SecretKey == "" </span><span class="cov1" title="1">{
+                return fmt.Errorf("secret key is required")
+        }</span>
+        <span class="cov6" title="2">return nil</span>
+}
 
-func NewAuth0Handler() *Auth0Handler <span class="cov8" title="1">{
-        return &amp;Auth0Handler{}
+type Builder struct {
+        config *MVPConfig
+}
+
+func NewBuilder() *Builder <span class="cov1" title="1">{
+        return &amp;Builder{
+                config: &amp;MVPConfig{
+                        BaseConfig: baseconfig.BaseConfig{
+                                AppPort: 4004,
+                                AppHost: "0.0.0.0",
+                        },
+                },
+        }
 }</span>
 
-func (h *Auth0Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
-        if r.Method != http.MethodPost </span><span class="cov0" title="0">{
-                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-                return
-        }</span>
+func (b *Builder) WithBaseConfig(base baseconfig.BaseConfig) *Builder <span class="cov1" title="1">{
+        b.config.BaseConfig = base
+        return b
+}</span>
 
-        <span class="cov8" title="1">response := ValidationResponse{Valid: true}
-        if err := utils.WriteJSONResponse(w, http.StatusOK, response); err != nil </span><span class="cov0" title="0">{
-                http.Error(w, "Failed to write response", http.StatusInternalServerError)
+func (b *Builder) WithSecretKey(key string) *Builder <span class="cov1" title="1">{
+        b.config.SecretKey = key
+        return b
+}</span>
+
+func (b *Builder) Build() (*MVPConfig, error) <span class="cov1" title="1">{
+        if err := b.config.Validate(); err != nil </span><span class="cov0" title="0">{
+                return nil, err
         }</span>
+        <span class="cov1" title="1">return b.config, nil</span>
 }
 </pre>
 		
-		<pre class="file" id="file1" style="display: none">package handlers
+		<pre class="file" id="file1" style="display: none">package config
 
 import (
-        "net/http"
-        "time"
+        "fmt"
+        "os"
 
-        "github.com/sabasm/go-server/internal/utils"
+        baseconfig "github.com/sabasm/go-server/internal/config"
 )
 
-type TokenResponse struct {
-        Token   string `json:"token"`
-        Expires int64  `json:"expires"`
-}
+func LoadFromEnv() (baseconfig.Config, error) <span class="cov10" title="2">{
+        base := baseconfig.LoadFromEnv()
+        secretKey := os.Getenv("MVP_SECRET_KEY")
 
-type M2MHandler struct {
-        secretKey string
-}
-
-func NewM2MHandler(secretKey string) *M2MHandler <span class="cov8" title="1">{
-        return &amp;M2MHandler{secretKey: secretKey}
-}</span>
-
-func (h *M2MHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
-        if r.Method != http.MethodPost </span><span class="cov0" title="0">{
-                http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-                return
+        if secretKey == "" </span><span class="cov1" title="1">{
+                return nil, fmt.Errorf("MVP_SECRET_KEY environment variable is required")
         }</span>
 
-        <span class="cov8" title="1">response := TokenResponse{
-                Token:   h.secretKey,
-                Expires: time.Now().Add(24 * time.Hour).Unix(),
-        }
+        <span class="cov1" title="1">config, err := NewBuilder().
+                WithBaseConfig(*base.(*baseconfig.BaseConfig)).
+                WithSecretKey(secretKey).
+                Build()
 
-        if err := utils.WriteJSONResponse(w, http.StatusOK, response); err != nil </span><span class="cov0" title="0">{
-                http.Error(w, "Failed to write response", http.StatusInternalServerError)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to build config: %w", err)
         }</span>
+
+        <span class="cov1" title="1">return config, nil</span>
 }
 </pre>
 		
@@ -199,136 +213,9 @@ import (
         "syscall"
         "time"
 
-        "github.com/sabasm/go-server/cmd/auth-server/service"
-        "github.com/sabasm/go-server/internal/config"
-        "github.com/sabasm/go-server/internal/logger"
-        "github.com/sabasm/go-server/internal/server"
-        "go.uber.org/zap"
-)
-
-func handleServerShutdown(srv server.ServerInterface, logger *zap.Logger) <span class="cov0" title="0">{
-        logger.Info("Initiating graceful shutdown")
-        ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-        defer cancel()
-
-        if err := srv.Shutdown(ctx); err != nil </span><span class="cov0" title="0">{
-                logger.Error("Forced shutdown required", zap.Error(err))
-        }</span>
-}
-
-func main() <span class="cov0" title="0">{
-        appConfig := config.LoadFromEnv()
-        if err := appConfig.Validate(); err != nil </span><span class="cov0" title="0">{
-                log.Fatalf("Configuration validation failed: %v", err)
-        }</span>
-
-        <span class="cov0" title="0">logger, err := logger.NewLogger()
-        if err != nil </span><span class="cov0" title="0">{
-                log.Fatalf("Logger initialization failed: %v", err)
-        }</span>
-        <span class="cov0" title="0">defer func() </span><span class="cov0" title="0">{
-                _ = logger.Sync()
-        }</span>()
-
-        <span class="cov0" title="0">srvCfg := &amp;server.Config{
-                Host:     appConfig.GetAppHost(),
-                Port:     appConfig.GetAppPort(),
-                BasePath: "/auth",
-                Options: server.Options{
-                        ReadTimeout:    15 * time.Second,
-                        WriteTimeout:   15 * time.Second,
-                        IdleTimeout:    60 * time.Second,
-                        MaxHeaderBytes: 1 &lt;&lt; 20,
-                },
-        }
-
-        authService := service.NewAuthService(logger)
-        authService.ConfigureRoutes(os.Getenv("M2M_SECRET_KEY"))
-
-        srv := server.NewBuilder(srvCfg).
-                WithLogger(logger).
-                WithTimeout(
-                        srvCfg.Options.ReadTimeout,
-                        srvCfg.Options.WriteTimeout,
-                        srvCfg.Options.IdleTimeout,
-                ).
-                WithRoute("", authService.GetHandler().ServeHTTP).
-                Build()
-
-        serverError := make(chan error, 1)
-        go func() </span><span class="cov0" title="0">{
-                logger.Info("Starting auth server",
-                        zap.String("host", srvCfg.Host),
-                        zap.Int("port", srvCfg.Port))
-                if err := srv.Start(); err != nil &amp;&amp; err != http.ErrServerClosed </span><span class="cov0" title="0">{
-                        logger.Error("Server error occurred", zap.Error(err))
-                        serverError &lt;- err
-                }</span>
-        }()
-
-        <span class="cov0" title="0">sigChan := make(chan os.Signal, 1)
-        signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-        select </span>{
-        case &lt;-sigChan:<span class="cov0" title="0">
-                handleServerShutdown(srv, logger)</span>
-        case err := &lt;-serverError:<span class="cov0" title="0">
-                logger.Error("Fatal server error", zap.Error(err))</span>
-        }
-}
-</pre>
-		
-		<pre class="file" id="file3" style="display: none">package service
-
-import (
-        "net/http"
-
-        "github.com/gorilla/mux"
-        "github.com/sabasm/go-server/cmd/auth-server/handlers"
-        "github.com/sabasm/go-server/internal/middleware"
-        "go.uber.org/zap"
-)
-
-type AuthService struct {
-        logger *zap.Logger
-        router *mux.Router
-}
-
-func NewAuthService(logger *zap.Logger) *AuthService <span class="cov1" title="1">{
-        return &amp;AuthService{
-                logger: logger,
-                router: mux.NewRouter(),
-        }
-}</span>
-
-func (s *AuthService) ConfigureRoutes(m2mSecret string) <span class="cov1" title="1">{
-        s.router.Use(middleware.LoggingMiddleware(s.logger))
-        s.router.Use(middleware.RecoveryMiddleware(s.logger))
-
-        s.router.Handle("/auth/m2m/token", handlers.NewM2MHandler(m2mSecret))
-        s.router.Handle("/auth/auth0/validate", handlers.NewAuth0Handler())
-}</span>
-
-func (s *AuthService) GetHandler() http.Handler <span class="cov10" title="2">{
-        return s.router
-}</span>
-</pre>
-		
-		<pre class="file" id="file4" style="display: none">package main
-
-import (
-        "context"
-        "log"
-        "net/http"
-        "os"
-        "os/signal"
-        "syscall"
-        "time"
-
         "github.com/gorilla/mux"
         "github.com/sabasm/go-server/internal/api/core/handlers"
-        "github.com/sabasm/go-server/internal/api/handlers/health"
-        "github.com/sabasm/go-server/internal/api/handlers/root"
+        "github.com/sabasm/go-server/internal/api/routes"
         "github.com/sabasm/go-server/internal/config"
         "github.com/sabasm/go-server/internal/logger"
         "github.com/sabasm/go-server/internal/middleware"
@@ -338,17 +225,16 @@ import (
 
 func main() <span class="cov1" title="1">{
         appConfig := config.LoadFromEnv()
-        if err := appConfig.Validate(); err != nil </span><span class="cov0" title="0">{
-                log.Fatalf("Configuration validation failed: %v", err)
-        }</span>
 
-        <span class="cov1" title="1">logger, err := logger.NewLogger()
+        logr, err := logger.NewLogger([]string{"stdout"})
         if err != nil </span><span class="cov0" title="0">{
                 log.Fatalf("Logger initialization failed: %v", err)
         }</span>
         <span class="cov1" title="1">defer func() </span><span class="cov1" title="1">{
-                _ = logger.Sync()
-        }</span>()
+                if err := logr.Sync(); err != nil </span><span class="cov1" title="1">{
+                        log.Printf("Logger sync error: %v", err)
+                }</span>
+        }()
 
         <span class="cov1" title="1">srvCfg := &amp;server.Config{
                 Host:     appConfig.GetAppHost(),
@@ -363,33 +249,34 @@ func main() <span class="cov1" title="1">{
         }
 
         if err := srvCfg.Validate(); err != nil </span><span class="cov0" title="0">{
-                logger.Fatal("Server configuration validation failed",
-                        zap.Error(err),
-                        zap.Any("config", srvCfg))
+                logr.Fatal("Server configuration validation failed", zap.Error(err), zap.Any("config", srvCfg))
         }</span>
 
         <span class="cov1" title="1">router := mux.NewRouter()
-        router.Use(middleware.RecoveryMiddleware(logger))
-        router.Use(middleware.LoggingMiddleware(logger))
+        router.Use(middleware.RecoveryMiddleware(logr))
+        router.Use(middleware.LoggingMiddleware(logr))
 
-        srv := server.NewBuilder(srvCfg).
-                WithLogger(logger).
+        defaultRoutes := routes.GetDefaultRoutes()
+        routes.RegisterRoutes(router, defaultRoutes, func(h http.Handler) http.Handler </span><span class="cov5" title="2">{
+                return wrapHandler(h, logr)
+        }</span>)
+
+        <span class="cov1" title="1">srv := server.NewBuilder(srvCfg).
+                WithLogger(logr).
                 WithTimeout(
                         srvCfg.Options.ReadTimeout,
                         srvCfg.Options.WriteTimeout,
                         srvCfg.Options.IdleTimeout,
                 ).
-                WithRoute("/health", wrapHandler(health.New(), logger)).
-                WithRoute("/", wrapHandler(root.New(), logger)).
                 Build()
+
+        srv.(*server.Server).SetHandler(router)
 
         serverError := make(chan error, 1)
         go func() </span><span class="cov1" title="1">{
-                logger.Info("Starting server",
-                        zap.String("host", srvCfg.Host),
-                        zap.Int("port", srvCfg.Port))
+                logr.Info("Starting server", zap.String("host", srvCfg.Host), zap.Int("port", srvCfg.Port))
                 if err := srv.Start(); err != nil &amp;&amp; err != http.ErrServerClosed </span><span class="cov0" title="0">{
-                        logger.Error("Server error occurred", zap.Error(err))
+                        logr.Error("Server error occurred", zap.Error(err))
                         serverError &lt;- err
                 }</span>
         }()
@@ -399,37 +286,36 @@ func main() <span class="cov1" title="1">{
 
         select </span>{
         case &lt;-sigChan:<span class="cov1" title="1">
-                handleServerShutdown(srv, logger)</span>
+                handleServerShutdown(srv, logr)</span>
         case err := &lt;-serverError:<span class="cov0" title="0">
-                logger.Error("Fatal server error", zap.Error(err))</span>
+                logr.Error("Fatal server error", zap.Error(err))</span>
         }
 }
 
-func wrapHandler(h http.Handler, logger *zap.Logger) http.HandlerFunc <span class="cov8" title="3">{
-        return func(w http.ResponseWriter, r *http.Request) </span><span class="cov10" title="4">{
+func wrapHandler(h http.Handler, logr *zap.Logger) http.Handler <span class="cov8" title="3">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov10" title="4">{
                 bw := handlers.NewBufferedResponseWriter(w)
                 defer func() </span><span class="cov10" title="4">{
                         if err := bw.Flush(); err != nil </span><span class="cov1" title="1">{
-                                logger.Error("Response flush failed", zap.Error(err))
+                                logr.Error("Response flush failed", zap.Error(err))
                         }</span>
                 }()
                 <span class="cov10" title="4">h.ServeHTTP(bw, r)</span>
-        }
+        })
 }
 
-func handleServerShutdown(srv server.ServerInterface, logger *zap.Logger) <span class="cov5" title="2">{
-        logger.Info("Initiating graceful shutdown")
+func handleServerShutdown(srv server.ServerInterface, logr *zap.Logger) <span class="cov5" title="2">{
+        logr.Info("Initiating graceful shutdown")
         ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
         defer cancel()
 
         if err := srv.Shutdown(ctx); err != nil </span><span class="cov1" title="1">{
-                logger.Error("Forced shutdown required", zap.Error(err))
+                logr.Error("Forced shutdown required", zap.Error(err))
         }</span>
 }
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">// cmd/server/main.go
-package main
+		<pre class="file" id="file3" style="display: none">package main
 
 import (
         "context"
@@ -444,25 +330,28 @@ import (
         "github.com/sabasm/go-server/internal/api/handlers/health"
         "github.com/sabasm/go-server/internal/api/handlers/root"
         "github.com/sabasm/go-server/internal/config"
+        "github.com/sabasm/go-server/internal/logger"
         "github.com/sabasm/go-server/internal/middleware"
         "github.com/sabasm/go-server/internal/server"
-        "go.uber.org/zap"
 )
 
 func main() <span class="cov8" title="1">{
         appConfig := config.LoadFromEnv()
-        logger, err := zap.NewProduction()
+
+        // Inicializar Logger
+        logr, err := logger.NewLogger([]string{"stdout"})
         if err != nil </span><span class="cov0" title="0">{
-                log.Fatalf("Failed to initialize logger: %v", err)
+                log.Fatalf("Error al inicializar el logger: %v", err)
         }</span>
         <span class="cov8" title="1">defer func() </span><span class="cov8" title="1">{
-                if syncErr := logger.Sync(); syncErr != nil </span><span class="cov8" title="1">{
-                        log.Printf("Logger sync error: %v", syncErr)
+                if syncErr := logr.Sync(); syncErr != nil </span><span class="cov8" title="1">{
+                        log.Printf("Error de sincronización del logger: %v", syncErr)
                 }</span>
         }()
 
+        // Configurar Rutas
         <span class="cov8" title="1">router := mux.NewRouter()
-        router.Use(middleware.LoggingMiddleware(logger))
+        router.Use(middleware.LoggingMiddleware(logr))
 
         srvCfg := server.Config{
                 Host:     appConfig.GetAppHost(),
@@ -476,7 +365,7 @@ func main() <span class="cov8" title="1">{
         }
 
         srv := server.NewBuilder(&amp;srvCfg).
-                WithLogger(logger).
+                WithLogger(logr).
                 WithRoute("/health", health.New().ServeHTTP).
                 WithRoute("/", root.New().ServeHTTP).
                 Build()
@@ -495,7 +384,7 @@ func main() <span class="cov8" title="1">{
         case &lt;-sigChan:<span class="cov8" title="1">
                 handleServerShutdown(srv)</span>
         case err := &lt;-serverError:<span class="cov0" title="0">
-                log.Printf("Server error: %v", err)</span>
+                log.Printf("Error del servidor: %v", err)</span>
         }
 }
 
@@ -503,12 +392,12 @@ func handleServerShutdown(srv server.ServerInterface) <span class="cov8" title="
         ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
         defer cancel()
         if err := srv.Shutdown(ctx); err != nil </span><span class="cov0" title="0">{
-                log.Printf("Server forced to shutdown: %v", err)
+                log.Printf("Apagado forzado del servidor: %v", err)
         }</span>
 }
 </pre>
 		
-		<pre class="file" id="file6" style="display: none">package api
+		<pre class="file" id="file4" style="display: none">package api
 
 type API struct{}
 
@@ -517,7 +406,7 @@ func NewAPI() *API <span class="cov8" title="1">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package docs
+		<pre class="file" id="file5" style="display: none">package docs
 
 type SwaggerInfo struct {
         Title       string
@@ -545,7 +434,7 @@ func ServiceStatus() SwaggerInfo <span class="cov8" title="1">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package handlers
+		<pre class="file" id="file6" style="display: none">package handlers
 
 import (
         "bytes"
@@ -583,7 +472,7 @@ func (b *BufferedResponseWriter) Flush() error <span class="cov10" title="2">{
 }
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package health
+		<pre class="file" id="file7" style="display: none">package health
 
 import (
         "encoding/json"
@@ -613,7 +502,7 @@ func (h *HealthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span 
 }
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package root
+		<pre class="file" id="file8" style="display: none">package root
 
 import (
         "encoding/json"
@@ -639,7 +528,7 @@ func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span cl
 }
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package integration
+		<pre class="file" id="file9" style="display: none">package integration
 
 import "net"
 
@@ -659,7 +548,42 @@ func getAvailablePort() (int, error) <span class="cov8" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file12" style="display: none">// internal/config/config.go
+		<pre class="file" id="file10" style="display: none">package routes
+
+import (
+        "net/http"
+
+        "github.com/gorilla/mux"
+        "github.com/sabasm/go-server/internal/api/handlers/health"
+        "github.com/sabasm/go-server/internal/api/handlers/root"
+)
+
+type Route struct {
+        Path    string
+        Handler http.Handler
+}
+
+func GetDefaultRoutes() []Route <span class="cov1" title="1">{
+        return []Route{
+                {
+                        Path:    "/health",
+                        Handler: health.New(),
+                },
+                {
+                        Path:    "/",
+                        Handler: root.New(),
+                },
+        }
+}</span>
+
+func RegisterRoutes(router *mux.Router, routes []Route, wrapHandler func(http.Handler) http.Handler) <span class="cov1" title="1">{
+        for _, route := range routes </span><span class="cov10" title="2">{
+                router.Handle(route.Path, wrapHandler(route.Handler))
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">// internal/config/config.go
 package config
 
 import (
@@ -778,7 +702,7 @@ func getEnvAsBool(key string, fallback bool) bool <span class="cov7" title="5">{
 }
 </pre>
 		
-		<pre class="file" id="file13" style="display: none">package copycmd
+		<pre class="file" id="file12" style="display: none">package copycmd
 
 import (
         "io"
@@ -807,28 +731,38 @@ func CopyFile(source, dest string) error <span class="cov8" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file14" style="display: none">package logger
+		<pre class="file" id="file13" style="display: none">package logger
 
 import (
-        "os"
-
         "go.uber.org/zap"
+        "go.uber.org/zap/zapcore"
 )
 
-func NewLogger() (*zap.Logger, error) <span class="cov10" title="2">{
-        if os.Getenv("LOGGER_MODE") == "test" </span><span class="cov10" title="2">{
-                return zap.NewDevelopment(zap.WithCaller(false))
-        }</span>
-
-        <span class="cov0" title="0">config := zap.NewProductionConfig()
-        config.OutputPaths = []string{"stdout"}
-        config.ErrorOutputPaths = []string{"stdout"}
-
-        return config.Build()</span>
+type LoggerOptions struct {
+        OutputPaths []string
 }
+
+func NewLogger(outputs []string) (*zap.Logger, error) <span class="cov10" title="2">{
+        config := zap.Config{
+                Encoding:         "json",
+                Level:            zap.NewAtomicLevelAt(zap.InfoLevel),
+                OutputPaths:      outputs,
+                ErrorOutputPaths: []string{"stderr"},
+                EncoderConfig: zapcore.EncoderConfig{
+                        TimeKey:      "time",
+                        LevelKey:     "level",
+                        MessageKey:   "msg",
+                        CallerKey:    "caller",
+                        EncodeLevel:  zapcore.LowercaseLevelEncoder,
+                        EncodeTime:   zapcore.ISO8601TimeEncoder,
+                        EncodeCaller: zapcore.ShortCallerEncoder,
+                },
+        }
+        return config.Build()
+}</span>
 </pre>
 		
-		<pre class="file" id="file15" style="display: none">package middleware
+		<pre class="file" id="file14" style="display: none">package middleware
 
 import (
         "net/http"
@@ -839,20 +773,29 @@ import (
 )
 
 func LoggingMiddleware(logger *zap.Logger) mux.MiddlewareFunc <span class="cov8" title="1">{
+        httpLogger := logger.Named("http")
+
         return func(next http.Handler) http.Handler </span><span class="cov8" title="1">{
                 return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
                         start := time.Now()
                         next.ServeHTTP(w, r)
-                        logger.Info("request processed",
-                                zap.String("method", r.Method),
-                                zap.String("path", r.URL.Path),
-                                zap.Duration("duration", time.Since(start)))
-                }</span>)
+                        duration := time.Since(start)
+
+                        if r.Method != http.MethodGet || duration &gt; time.Millisecond </span><span class="cov8" title="1">{
+                                httpLogger.Info("request",
+                                        zap.String("method", r.Method),
+                                        zap.String("path", r.URL.Path),
+                                        zap.Duration("took", duration),
+                                        zap.String("from", r.RemoteAddr),
+                                        zap.String("agent", r.UserAgent()),
+                                )
+                        }</span>
+                })
         }
 }
 </pre>
 		
-		<pre class="file" id="file16" style="display: none">package middleware
+		<pre class="file" id="file15" style="display: none">package middleware
 
 import (
         "net/http"
@@ -878,7 +821,7 @@ func RecoveryMiddleware(logger *zap.Logger) mux.MiddlewareFunc <span class="cov1
 }
 </pre>
 		
-		<pre class="file" id="file17" style="display: none">package server
+		<pre class="file" id="file16" style="display: none">package server
 
 import (
         "net/http"
@@ -974,7 +917,7 @@ func (b *serverBuilder) Build() ServerInterface <span class="cov7" title="5">{
 }
 </pre>
 		
-		<pre class="file" id="file18" style="display: none">package server
+		<pre class="file" id="file17" style="display: none">package server
 
 import (
         "fmt"
@@ -1025,7 +968,7 @@ func (c *Config) Validate() error <span class="cov8" title="4">{
 }
 </pre>
 		
-		<pre class="file" id="file19" style="display: none">package server
+		<pre class="file" id="file18" style="display: none">package server
 
 import (
         "context"
@@ -1053,9 +996,13 @@ func (s *Server) Shutdown(ctx context.Context) error <span class="cov10" title="
         s.logger.Info("shutting down server")
         return s.srv.Shutdown(ctx)
 }</span>
+
+func (s *Server) SetHandler(handler http.Handler) <span class="cov0" title="0">{
+        s.srv.Handler = handler
+}</span>
 </pre>
 		
-		<pre class="file" id="file20" style="display: none">package utils
+		<pre class="file" id="file19" style="display: none">package utils
 
 import (
         "encoding/json"

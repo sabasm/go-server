@@ -1,4 +1,10 @@
-github.com/sabasm/go-server/cmd/mvp-api/main.go:23:	main			76.9%
-github.com/sabasm/go-server/cmd/mvp-api/main.go:92:	wrapHandler		100.0%
-github.com/sabasm/go-server/cmd/mvp-api/main.go:104:	handleServerShutdown	100.0%
-total:							(statements)		83.8%
+github.com/sabasm/go-server/cmd/mvp-api/config/config.go:14:	Validate		80.0%
+github.com/sabasm/go-server/cmd/mvp-api/config/config.go:28:	NewBuilder		100.0%
+github.com/sabasm/go-server/cmd/mvp-api/config/config.go:39:	WithBaseConfig		100.0%
+github.com/sabasm/go-server/cmd/mvp-api/config/config.go:44:	WithSecretKey		100.0%
+github.com/sabasm/go-server/cmd/mvp-api/config/config.go:49:	Build			66.7%
+github.com/sabasm/go-server/cmd/mvp-api/config/env.go:10:	LoadFromEnv		87.5%
+github.com/sabasm/go-server/cmd/mvp-api/main.go:22:		main			82.8%
+github.com/sabasm/go-server/cmd/mvp-api/main.go:91:		wrapHandler		100.0%
+github.com/sabasm/go-server/cmd/mvp-api/main.go:103:		handleServerShutdown	100.0%
+total:								(statements)		86.9%
