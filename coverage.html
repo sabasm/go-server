@@ -760,13 +760,15 @@ func NewLogger(outputs []string) (*zap.Logger, error) <span class="cov10" title=
                 OutputPaths:      outputs,
                 ErrorOutputPaths: []string{"stderr"},
                 EncoderConfig: zapcore.EncoderConfig{
-                        TimeKey:      "time",
-                        LevelKey:     "level",
-                        MessageKey:   "msg",
-                        CallerKey:    "caller",
-                        EncodeLevel:  zapcore.LowercaseLevelEncoder,
-                        EncodeTime:   zapcore.ISO8601TimeEncoder,
-                        EncodeCaller: zapcore.ShortCallerEncoder,
+                        TimeKey:       "time",
+                        LevelKey:      "level",
+                        MessageKey:    "msg",
+                        CallerKey:     "caller",
+                        FunctionKey:   "func",
+                        StacktraceKey: "stacktrace",
+                        EncodeLevel:   zapcore.LowercaseLevelEncoder,
+                        EncodeTime:    zapcore.ISO8601TimeEncoder,
+                        EncodeCaller:  zapcore.FullCallerEncoder,
                 },
         }
         return config.Build()</span>
@@ -779,7 +781,6 @@ func ConfigureLogger() (*zap.Logger, error) <span class="cov10" title="2">{
                 logDir := "logs"
                 logFile := filepath.Join(logDir, "development.log")
 
-                // Ensure the logs directory exists
                 if err := os.MkdirAll(logDir, 0755); err != nil </span><span class="cov0" title="0">{
                         return nil, err
                 }</span>
@@ -791,7 +792,6 @@ func ConfigureLogger() (*zap.Logger, error) <span class="cov10" title="2">{
         <span class="cov10" title="2">return NewLogger(outputPaths)</span>
 }
 
-// SafeSync safely syncs the logger
 func SafeSync(logger *zap.Logger) <span class="cov1" title="1">{
         if runtime.GOOS != windowsOS </span><span class="cov1" title="1">{
                 _ = logger.Sync()
