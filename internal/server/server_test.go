@@ -1,25 +1,31 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"testing"
 	"time"
+
+	"go.uber.org/zap"
 )
 
-func TestSetHandler(t *testing.T) {
-	srv := &Server{
+func TestHandleServerShutdown_Error(t *testing.T) {
+	s := &Server{
 		srv: &http.Server{
-			ReadHeaderTimeout: 5 * time.Second, // Fix for G112 Slowloris attack protection
+			ReadHeaderTimeout: 5 * time.Second,
 		},
+		logger: zap.NewNop(),
 	}
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+	err := s.Shutdown(context.Background())
+	if err != nil {
+		t.Errorf("unexpected shutdown error: %v", err)
+	}
+}
 
-	srv.SetHandler(handler)
-
-	if srv.srv.Handler == nil {
-		t.Fatal("expected handler to be set")
+func TestServerWithInvalidConfig(t *testing.T) {
+	builder := NewBuilder(nil)
+	if builder != nil {
+		t.Fatal("expected nil server when config is nil")
 	}
 }

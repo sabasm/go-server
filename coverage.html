@@ -77,7 +77,7 @@
 				
 				<option value="file10">github.com/sabasm/go-server/internal/api/routes/routes.go (100.0%)</option>
 				
-				<option value="file11">github.com/sabasm/go-server/internal/config/config.go (18.4%)</option>
+				<option value="file11">github.com/sabasm/go-server/internal/config/config.go (86.8%)</option>
 				
 				<option value="file12">github.com/sabasm/go-server/internal/copycmd/command.go (75.0%)</option>
 				
@@ -91,7 +91,7 @@
 				
 				<option value="file17">github.com/sabasm/go-server/internal/server/config.go (75.0%)</option>
 				
-				<option value="file18">github.com/sabasm/go-server/internal/server/server.go (100.0%)</option>
+				<option value="file18">github.com/sabasm/go-server/internal/server/server.go (80.0%)</option>
 				
 				<option value="file19">github.com/sabasm/go-server/internal/utils/json.go (100.0%)</option>
 				
@@ -606,26 +606,26 @@ type BaseConfig struct {
         Debug   bool
 }
 
-func (c *BaseConfig) GetAppHost() string <span class="cov1" title="1">{
+func (c *BaseConfig) GetAppHost() string <span class="cov3" title="2">{
         return c.AppHost
 }</span>
 
-func (c *BaseConfig) GetAppPort() int <span class="cov1" title="1">{
+func (c *BaseConfig) GetAppPort() int <span class="cov3" title="2">{
         return c.AppPort
 }</span>
 
-func (c *BaseConfig) IsDebug() bool <span class="cov1" title="1">{
+func (c *BaseConfig) IsDebug() bool <span class="cov3" title="2">{
         return c.Debug
 }</span>
 
-func (c *BaseConfig) Validate() error <span class="cov10" title="2">{
-        if c.AppPort &lt;= 0 </span><span class="cov1" title="1">{
+func (c *BaseConfig) Validate() error <span class="cov0" title="0">{
+        if c.AppPort &lt;= 0 </span><span class="cov0" title="0">{
                 return fmt.Errorf("expected positive port number")
         }</span>
-        <span class="cov1" title="1">if c.AppHost == "" </span><span class="cov0" title="0">{
+        <span class="cov0" title="0">if c.AppHost == "" </span><span class="cov0" title="0">{
                 return fmt.Errorf("expected non-empty host")
         }</span>
-        <span class="cov1" title="1">return nil</span>
+        <span class="cov0" title="0">return nil</span>
 }
 
 type ConfigBuilder struct {
@@ -633,38 +633,38 @@ type ConfigBuilder struct {
         mutex  sync.Mutex
 }
 
-func NewConfigBuilder() *ConfigBuilder <span class="cov0" title="0">{
+func NewConfigBuilder() *ConfigBuilder <span class="cov3" title="2">{
         return &amp;ConfigBuilder{
                 config: &amp;BaseConfig{},
         }
 }</span>
 
-func (b *ConfigBuilder) WithAppHost(host string) *ConfigBuilder <span class="cov0" title="0">{
+func (b *ConfigBuilder) WithAppHost(host string) *ConfigBuilder <span class="cov3" title="2">{
         b.mutex.Lock()
         defer b.mutex.Unlock()
         b.config.AppHost = host
         return b
 }</span>
 
-func (b *ConfigBuilder) WithAppPort(port int) *ConfigBuilder <span class="cov0" title="0">{
+func (b *ConfigBuilder) WithAppPort(port int) *ConfigBuilder <span class="cov3" title="2">{
         b.mutex.Lock()
         defer b.mutex.Unlock()
         b.config.AppPort = port
         return b
 }</span>
 
-func (b *ConfigBuilder) WithDebug(debug bool) *ConfigBuilder <span class="cov0" title="0">{
+func (b *ConfigBuilder) WithDebug(debug bool) *ConfigBuilder <span class="cov3" title="2">{
         b.mutex.Lock()
         defer b.mutex.Unlock()
         b.config.Debug = debug
         return b
 }</span>
 
-func (b *ConfigBuilder) Build() Config <span class="cov0" title="0">{
+func (b *ConfigBuilder) Build() Config <span class="cov3" title="2">{
         return b.config
 }</span>
 
-func LoadFromEnv() Config <span class="cov0" title="0">{
+func LoadFromEnv() Config <span class="cov3" title="2">{
         builder := NewConfigBuilder()
 
         appHost := getEnv("APP_HOST", "localhost")
@@ -678,27 +678,27 @@ func LoadFromEnv() Config <span class="cov0" title="0">{
                 Build()
 }</span>
 
-func getEnv(key, fallback string) string <span class="cov0" title="0">{
-        if value, exists := os.LookupEnv(key); exists </span><span class="cov0" title="0">{
+func getEnv(key, fallback string) string <span class="cov10" title="12">{
+        if value, exists := os.LookupEnv(key); exists </span><span class="cov7" title="6">{
                 return value
         }</span>
-        <span class="cov0" title="0">return fallback</span>
+        <span class="cov7" title="6">return fallback</span>
 }
 
-func getEnvAsInt(key string, fallback int) int <span class="cov0" title="0">{
+func getEnvAsInt(key string, fallback int) int <span class="cov6" title="4">{
         valueStr := getEnv(key, "")
-        if value, err := strconv.Atoi(valueStr); err == nil </span><span class="cov0" title="0">{
+        if value, err := strconv.Atoi(valueStr); err == nil </span><span class="cov3" title="2">{
                 return value
         }</span>
-        <span class="cov0" title="0">return fallback</span>
+        <span class="cov3" title="2">return fallback</span>
 }
 
-func getEnvAsBool(key string, fallback bool) bool <span class="cov0" title="0">{
+func getEnvAsBool(key string, fallback bool) bool <span class="cov6" title="4">{
         valueStr := getEnv(key, "")
-        if value, err := strconv.ParseBool(valueStr); err == nil </span><span class="cov0" title="0">{
+        if value, err := strconv.ParseBool(valueStr); err == nil </span><span class="cov3" title="2">{
                 return value
         }</span>
-        <span class="cov0" title="0">return fallback</span>
+        <span class="cov3" title="2">return fallback</span>
 }
 </pre>
 		
@@ -880,11 +880,11 @@ type serverBuilder struct {
         middleware []mux.MiddlewareFunc
 }
 
-func NewBuilder(cfg *Config) *serverBuilder <span class="cov10" title="6">{
-        if cfg == nil </span><span class="cov1" title="1">{
+func NewBuilder(cfg *Config) *serverBuilder <span class="cov10" title="7">{
+        if cfg == nil </span><span class="cov4" title="2">{
                 return nil
         }</span>
-        <span class="cov9" title="5">return &amp;serverBuilder{
+        <span class="cov8" title="5">return &amp;serverBuilder{
                 config:     cfg,
                 router:     mux.NewRouter(),
                 middleware: make([]mux.MiddlewareFunc, 0),
@@ -925,7 +925,7 @@ func (b *serverBuilder) WithTimeout(read, write, idle time.Duration) *serverBuil
         return b</span>
 }
 
-func (b *serverBuilder) Build() ServerInterface <span class="cov9" title="5">{
+func (b *serverBuilder) Build() ServerInterface <span class="cov8" title="5">{
         if b == nil || b.router == nil </span><span class="cov4" title="2">{
                 return nil
         }</span>
@@ -1022,19 +1022,19 @@ type Server struct {
         srv    *http.Server
 }
 
-func (s *Server) Start() error <span class="cov8" title="1">{
+func (s *Server) Start() error <span class="cov1" title="1">{
         s.logger.Info("starting server",
                 zap.String("addr", s.srv.Addr),
                 zap.String("base_path", s.config.BasePath))
         return s.srv.ListenAndServe()
 }</span>
 
-func (s *Server) Shutdown(ctx context.Context) error <span class="cov8" title="1">{
+func (s *Server) Shutdown(ctx context.Context) error <span class="cov10" title="2">{
         s.logger.Info("shutting down server")
         return s.srv.Shutdown(ctx)
 }</span>
 
-func (s *Server) SetHandler(handler http.Handler) <span class="cov8" title="1">{
+func (s *Server) SetHandler(handler http.Handler) <span class="cov0" title="0">{
         s.srv.Handler = handler
 }</span>
 </pre>
