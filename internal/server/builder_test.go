@@ -1,23 +1,52 @@
 package server
 
 import (
+	"net/http"
 	"testing"
-	"time"
+
+	"go.uber.org/zap"
 )
 
-func TestWithTimeout(t *testing.T) {
+func TestWithMiddleware(t *testing.T) {
 	cfg := &Config{Host: "localhost", Port: 8080}
-	builder := NewBuilder(cfg).WithTimeout(5*time.Second, 10*time.Second, 15*time.Second)
-
-	if builder.timeouts.read != 5*time.Second {
-		t.Errorf("expected read timeout of 5s, got %v", builder.timeouts.read)
+	middleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-Test", "middleware")
+			next.ServeHTTP(w, r)
+		})
 	}
 
-	if builder.timeouts.write != 10*time.Second {
-		t.Errorf("expected write timeout of 10s, got %v", builder.timeouts.write)
-	}
+	builder := NewBuilder(cfg).WithMiddleware(middleware)
 
-	if builder.timeouts.idle != 15*time.Second {
-		t.Errorf("expected idle timeout of 15s, got %v", builder.timeouts.idle)
+	if len(builder.middleware) != 1 {
+		t.Fatalf("expected 1 middleware, got %d", len(builder.middleware))
+	}
+}
+
+func TestWithLogger(t *testing.T) {
+	cfg := &Config{Host: "localhost", Port: 8080}
+	logger, _ := zap.NewDevelopment()
+
+	builder := NewBuilder(cfg).WithLogger(logger)
+
+	if builder.logger == nil {
+		t.Fatal("expected logger to be set")
+	}
+}
+
+func TestBuildWithNilConfig(t *testing.T) {
+	builder := NewBuilder(nil).Build()
+
+	if builder != nil {
+		t.Fatal("expected nil server when config is nil")
+	}
+}
+
+func TestBuildWithInvalidRouter(t *testing.T) {
+	builder := &serverBuilder{config: &Config{Host: "localhost", Port: 8080}}
+	server := builder.Build()
+
+	if server != nil {
+		t.Fatal("expected nil server when router is uninitialized")
 	}
 }

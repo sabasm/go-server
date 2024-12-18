@@ -87,9 +87,9 @@
 				
 				<option value="file15">github.com/sabasm/go-server/internal/middleware/recovery.go (100.0%)</option>
 				
-				<option value="file16">github.com/sabasm/go-server/internal/server/builder.go (55.2%)</option>
+				<option value="file16">github.com/sabasm/go-server/internal/server/builder.go (65.5%)</option>
 				
-				<option value="file17">github.com/sabasm/go-server/internal/server/config.go (18.8%)</option>
+				<option value="file17">github.com/sabasm/go-server/internal/server/config.go (75.0%)</option>
 				
 				<option value="file18">github.com/sabasm/go-server/internal/server/server.go (100.0%)</option>
 				
@@ -880,66 +880,66 @@ type serverBuilder struct {
         middleware []mux.MiddlewareFunc
 }
 
-func NewBuilder(cfg *Config) *serverBuilder <span class="cov10" title="4">{
-        if cfg == nil </span><span class="cov0" title="0">{
+func NewBuilder(cfg *Config) *serverBuilder <span class="cov10" title="6">{
+        if cfg == nil </span><span class="cov1" title="1">{
                 return nil
         }</span>
-        <span class="cov10" title="4">return &amp;serverBuilder{
+        <span class="cov9" title="5">return &amp;serverBuilder{
                 config:     cfg,
                 router:     mux.NewRouter(),
                 middleware: make([]mux.MiddlewareFunc, 0),
         }</span>
 }
 
-func (b *serverBuilder) WithRoute(pattern string, handler http.HandlerFunc) *serverBuilder <span class="cov8" title="3">{
+func (b *serverBuilder) WithRoute(pattern string, handler http.HandlerFunc) *serverBuilder <span class="cov6" title="3">{
         if b == nil || b.router == nil </span><span class="cov0" title="0">{
                 return b
         }</span>
-        <span class="cov8" title="3">b.router.HandleFunc(pattern, handler)
+        <span class="cov6" title="3">b.router.HandleFunc(pattern, handler)
         return b</span>
 }
 
-func (b *serverBuilder) WithMiddleware(m mux.MiddlewareFunc) *serverBuilder <span class="cov0" title="0">{
+func (b *serverBuilder) WithMiddleware(m mux.MiddlewareFunc) *serverBuilder <span class="cov1" title="1">{
         if b == nil </span><span class="cov0" title="0">{
                 return b
         }</span>
-        <span class="cov0" title="0">b.middleware = append(b.middleware, m)
+        <span class="cov1" title="1">b.middleware = append(b.middleware, m)
         return b</span>
 }
 
-func (b *serverBuilder) WithLogger(logger *zap.Logger) *serverBuilder <span class="cov0" title="0">{
+func (b *serverBuilder) WithLogger(logger *zap.Logger) *serverBuilder <span class="cov1" title="1">{
         if b == nil </span><span class="cov0" title="0">{
                 return b
         }</span>
-        <span class="cov0" title="0">b.logger = logger
+        <span class="cov1" title="1">b.logger = logger
         return b</span>
 }
 
-func (b *serverBuilder) WithTimeout(read, write, idle time.Duration) *serverBuilder <span class="cov1" title="1">{
+func (b *serverBuilder) WithTimeout(read, write, idle time.Duration) *serverBuilder <span class="cov0" title="0">{
         if b == nil </span><span class="cov0" title="0">{
                 return b
         }</span>
-        <span class="cov1" title="1">b.timeouts.read = read
+        <span class="cov0" title="0">b.timeouts.read = read
         b.timeouts.write = write
         b.timeouts.idle = idle
         return b</span>
 }
 
-func (b *serverBuilder) Build() ServerInterface <span class="cov8" title="3">{
-        if b == nil || b.router == nil </span><span class="cov0" title="0">{
+func (b *serverBuilder) Build() ServerInterface <span class="cov9" title="5">{
+        if b == nil || b.router == nil </span><span class="cov4" title="2">{
                 return nil
         }</span>
 
-        <span class="cov8" title="3">if b.logger == nil </span><span class="cov8" title="3">{
+        <span class="cov6" title="3">if b.logger == nil </span><span class="cov6" title="3">{
                 logger, _ := zap.NewProduction()
                 b.logger = logger
         }</span>
 
-        <span class="cov8" title="3">for _, m := range b.middleware </span><span class="cov0" title="0">{
+        <span class="cov6" title="3">for _, m := range b.middleware </span><span class="cov0" title="0">{
                 b.router.Use(m)
         }</span>
 
-        <span class="cov8" title="3">return &amp;Server{
+        <span class="cov6" title="3">return &amp;Server{
                 config: b.config,
                 router: b.router,
                 logger: b.logger,
@@ -975,33 +975,33 @@ type Options struct {
         MaxHeaderBytes int
 }
 
-func (c *Config) GetAddress() string <span class="cov10" title="5">{
-        if c == nil </span><span class="cov1" title="1">{
+func (c *Config) GetAddress() string <span class="cov6" title="3">{
+        if c == nil </span><span class="cov0" title="0">{
                 return ""
         }</span>
-        <span class="cov8" title="4">return fmt.Sprintf("%s:%d", c.Host, c.Port)</span>
+        <span class="cov6" title="3">return fmt.Sprintf("%s:%d", c.Host, c.Port)</span>
 }
 
-func (c *Config) Validate() error <span class="cov0" title="0">{
+func (c *Config) Validate() error <span class="cov10" title="6">{
         if c == nil </span><span class="cov0" title="0">{
                 return fmt.Errorf("config cannot be nil")
         }</span>
-        <span class="cov0" title="0">if c.Port &lt;= 0 || c.Port &gt; 65535 </span><span class="cov0" title="0">{
+        <span class="cov10" title="6">if c.Port &lt;= 0 || c.Port &gt; 65535 </span><span class="cov1" title="1">{
                 return fmt.Errorf("invalid port number: %d", c.Port)
         }</span>
-        <span class="cov0" title="0">if c.Host == "" </span><span class="cov0" title="0">{
+        <span class="cov9" title="5">if c.Host == "" </span><span class="cov1" title="1">{
                 return fmt.Errorf("host cannot be empty")
         }</span>
-        <span class="cov0" title="0">if c.Options.ReadTimeout &lt;= 0 </span><span class="cov0" title="0">{
+        <span class="cov7" title="4">if c.Options.ReadTimeout &lt;= 0 </span><span class="cov6" title="3">{
                 return fmt.Errorf("read timeout must be positive")
         }</span>
-        <span class="cov0" title="0">if c.Options.WriteTimeout &lt;= 0 </span><span class="cov0" title="0">{
+        <span class="cov1" title="1">if c.Options.WriteTimeout &lt;= 0 </span><span class="cov0" title="0">{
                 return fmt.Errorf("write timeout must be positive")
         }</span>
-        <span class="cov0" title="0">if c.Options.IdleTimeout &lt;= 0 </span><span class="cov0" title="0">{
+        <span class="cov1" title="1">if c.Options.IdleTimeout &lt;= 0 </span><span class="cov0" title="0">{
                 return fmt.Errorf("idle timeout must be positive")
         }</span>
-        <span class="cov0" title="0">return nil</span>
+        <span class="cov1" title="1">return nil</span>
 }
 </pre>
 		
