@@ -27,13 +27,15 @@ func NewLogger(outputs []string) (*zap.Logger, error) {
 		OutputPaths:      outputs,
 		ErrorOutputPaths: []string{"stderr"},
 		EncoderConfig: zapcore.EncoderConfig{
-			TimeKey:      "time",
-			LevelKey:     "level",
-			MessageKey:   "msg",
-			CallerKey:    "caller",
-			EncodeLevel:  zapcore.LowercaseLevelEncoder,
-			EncodeTime:   zapcore.ISO8601TimeEncoder,
-			EncodeCaller: zapcore.ShortCallerEncoder,
+			TimeKey:       "time",
+			LevelKey:      "level",
+			MessageKey:    "msg",
+			CallerKey:     "caller",
+			FunctionKey:   "func",
+			StacktraceKey: "stacktrace",
+			EncodeLevel:   zapcore.LowercaseLevelEncoder,
+			EncodeTime:    zapcore.ISO8601TimeEncoder,
+			EncodeCaller:  zapcore.FullCallerEncoder,
 		},
 	}
 	return config.Build()
@@ -46,7 +48,6 @@ func ConfigureLogger() (*zap.Logger, error) {
 		logDir := "logs"
 		logFile := filepath.Join(logDir, "development.log")
 
-		// Ensure the logs directory exists
 		if err := os.MkdirAll(logDir, 0755); err != nil {
 			return nil, err
 		}
@@ -58,7 +59,6 @@ func ConfigureLogger() (*zap.Logger, error) {
 	return NewLogger(outputPaths)
 }
 
-// SafeSync safely syncs the logger
 func SafeSync(logger *zap.Logger) {
 	if runtime.GOOS != windowsOS {
 		_ = logger.Sync()
